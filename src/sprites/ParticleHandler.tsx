@@ -2,7 +2,6 @@ import * as PIXI from "pixi.js"
 import { RoomSprite } from "./RoomSprite"
 
 let particleContainer: PIXI.Container | null = null
-/* let trailContainer: PIXI.Container | null = null */
 
 interface Particle {
     x: number,
@@ -16,27 +15,13 @@ interface Particle {
     sprite: PIXI.Graphics
 }
 
-/* interface TrailPoint {
-    x: number,
-    y: number,
-    life: number,
-    maxLife: number,
-    sprite: PIXI.Graphics
-} */
-
 export const ParticleHandler = {
     particles: [] as Particle[],
-    /* trails: [] as TrailPoint[], */
-
-    _trailSampleRate: 1,
-    _trailLastSample: 0,
 
     init(app: PIXI.Application) {
         particleContainer = new PIXI.Container()
-        /* trailContainer = new PIXI.Container() */
 
         app.stage.addChild(particleContainer)
-        /* app.stage.addChild(trailContainer) */
         app.ticker.add(this.update)
     },
 
@@ -61,30 +46,6 @@ export const ParticleHandler = {
         ParticleHandler.particles.push(particle)
     },
 
-    /* spawnTrailPoint(x: number, y: number, life?: number, maxLife?: number) {
-        const graphics = new PIXI.Graphics().circle(0, 0, 6).fill(0xffffff)
-
-        const trailPoint: TrailPoint = {
-            x: x,
-            y: y,
-            life: life ?? 0,
-            maxLife: maxLife ?? 500,
-            sprite: graphics
-        }
-
-        trailContainer?.addChild(graphics)
-        ParticleHandler.trails.push(trailPoint)
-    },
-
-    sampleTrail(x: number, y: number, dt: number) {
-        this._trailLastSample += dt
-
-        if (this._trailLastSample < this._trailSampleRate) return
-
-        this._trailLastSample = 0
-        this.spawnTrailPoint(x, y)
-    }, */
-
     update(ticker: PIXI.Ticker) {
         if (!ParticleHandler.particles) return;
 
@@ -94,10 +55,11 @@ export const ParticleHandler = {
             const p = ParticleHandler.particles[i]
             p.life += ms
 
+            /* check if particle is out of bounds or out of life */
             if (
                 (p.life >= p.maxLife) ||
-                p.x < RoomSprite.ROOM_BOUNDS.left || p.x > RoomSprite.ROOM_BOUNDS.right ||
-                p.y < RoomSprite.ROOM_BOUNDS.top || p.y > RoomSprite.ROOM_BOUNDS.bottom
+                p.x < 0 || p.x > RoomSprite.ROOM_SIZE ||
+                p.y < 0 || p.y > RoomSprite.ROOM_SIZE
             ) {
                 particleContainer?.removeChild(p.sprite)
                 ParticleHandler.particles.splice(i, 1)
@@ -106,8 +68,9 @@ export const ParticleHandler = {
             }
 
             /* update pos */
-            p.sprite.x = p.x
-            p.sprite.y = p.y
+            const renderPos = RoomSprite.getRenderPosition(p.x, p.y)
+            p.sprite.x = renderPos.x
+            p.sprite.y = renderPos.y
 
             /* apply new radius */
             const lifeNormal = p.life / p.maxLife
@@ -124,26 +87,5 @@ export const ParticleHandler = {
             p.vx *= p.dampFactor
             p.vy *= p.dampFactor
         }
-
-        /* for (let i = 0; i < ParticleHandler.trails.length; i++) {
-            const t = ParticleHandler.trails[i]
-            t.life += ms
-
-            const n = t.life / t.maxLife
-
-            if (n >= 1) {
-                trailContainer?.removeChild(t.sprite)
-                ParticleHandler.trails.splice(i, 1)
-                i--
-                continue
-            }
-
-            const fade = 1 - n
-
-            t.sprite.alpha = fade
-
-            t.sprite.x = t.x
-            t.sprite.y = t.y
-        } */
     },
 }

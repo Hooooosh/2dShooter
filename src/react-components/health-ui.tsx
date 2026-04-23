@@ -6,7 +6,6 @@ import { RoomSprite } from "../sprites/RoomSprite"
 
 export default function HealthUI() {
     const [hp, setHp] = useState(Player.health)
-
     useEffect(() => {
         const handler = () => setHp(Player.health)
         const unsub = EventHandler.on(GLOBAL_EVENTS.HEALTH_CHANGED, handler)
@@ -15,18 +14,19 @@ export default function HealthUI() {
         }
     }, [])
 
+
     return (
         <div
             style={{
                 left: RoomSprite.ROOM_BOUNDS.left,
                 top: 0,
                 width: RoomSprite.ROOM_SIZE,
-                height: RoomSprite.ROOM_BOUNDS.top + "px"
+                height: RoomSprite.BANNER_SIZE - 10
             }}
-            className="absolute flex gap-4 items-center">
+            className="absolute flex gap-2 items-center py-7">
             {
                 Array.from({ length: Player.MAX_HEALTH }).map((_, i) => (
-                    <Heart key={i} filled={i < hp} />
+                    <Heart key={i} filled={i + 1 <= hp} />
                 ))
             }
         </div>
@@ -34,17 +34,18 @@ export default function HealthUI() {
 }
 
 const Heart = ({ filled }: { filled: boolean }) => {
+    console.log(filled)
     return (
-        <div className="relative flex items-center justify-center">
+        <div className="relative flex items-center justify-center h-full">
             <img
                 style={{
-                    animationDuration: "0.5s",
-                    animationIterationCount: "5",
-                    animationFillMode: "forwards",
-                    animationName: filled ? "heart-blink" : undefined,
+                    animationDuration: "200ms",
+                    animationIterationCount: "2",
+                    opacity: filled ? 1 : 0,
+                    animationName: filled ? "" : "heart-blink",
                 }}
-                src="/public/assets/heart.png" className="w-[50px] absolute" />
-            <img src="/public/assets/heart_empty.png" className="w-[50px]" />
+                src="/public/assets/heart.png" className="h-full absolute" />
+            <img src="/public/assets/heart_empty.png" className="h-full" />
         </div>
     )
 }

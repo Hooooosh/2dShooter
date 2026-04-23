@@ -1,10 +1,10 @@
 import * as PIXI from "pixi.js"
-import { Vector2 } from "../interfaces/genericInterfaces"
 import { Player } from "./PlayerSprite"
 import { Input } from "../helpers/input"
 import { ParticleHandler } from "./ParticleHandler"
 import cubicBezierEase from "../helpers/bezier"
 import { degToRad, signedAngleDelta } from "../helpers/angle"
+import { RoomSprite } from "./RoomSprite"
 
 let sprite: PIXI.Sprite | null = null
 
@@ -28,8 +28,8 @@ export const Sword = {
         sprite = new PIXI.Sprite(PIXI.Assets.get("sword"))
 
         sprite.anchor.set(0.5, this.SWORD_OFFSET_FROM_PLAYER)
-        sprite.x = app.screen.width / 2
-        sprite.y = app.screen.height / 2
+        sprite.x = Player.x
+        sprite.y = Player.y
 
         app.stage.addChild(sprite)
 
@@ -46,15 +46,11 @@ export const Sword = {
         return sprite
     },
 
-    getPosition(): Vector2 {
-        if (!sprite) return { x: 0, y: 0 }
-        return { x: sprite.x, y: sprite.y }
-    },
-
     setPosition(x: number, y: number) {
         if (!sprite) return
-        sprite.x = x
-        sprite.y = y
+        const renderPos = RoomSprite.getRenderPosition(x, y)
+        sprite.x = renderPos.x
+        sprite.y = renderPos.y
     },
 
     getIsSwinging() {
@@ -65,17 +61,19 @@ export const Sword = {
         if (!sprite || !this.getSprite()) return
 
         /* snap to player */
-        const player = Player.getPosition()
+        const playerPos = { x: Player.x, y: Player.y }
         const mousePos = app.renderer.events.pointer.global
-        this.setPosition(player.x, player.y)
-
+        this.setPosition(playerPos.x, playerPos.y)
 
         /* calculate sword angle */
         if (this.currentSwingCooldown < this.SWING_COOLDOWN) {
             this.currentSwingCooldown += ticker.deltaMS
         }
         const oldAngleAfterBezier = sprite.rotation
-        const angleToMouse = Math.atan2(mousePos.y - player.y, mousePos.x - player.x) + Math.PI / 2
+        const angleToMouse = Math.atan2(
+            mousePos.y - RoomSprite.getRenderPosition(playerPos.x, playerPos.y).y,
+            mousePos.x - RoomSprite.getRenderPosition(playerPos.x, playerPos.y).x
+        ) + Math.PI / 2
         let newAngleAfterBezier
 
         /* handle swing input */
@@ -96,11 +94,13 @@ export const Sword = {
         else {
             newAngleAfterBezier = angleToMouse + this.SWING_ANGLE / 2 * this.currentSwingSide
         }
+
+        /* apply rot */
         sprite.rotation = newAngleAfterBezier
 
 
-        const clampToNormal = (v: number) => Math.max(0, Math.min(1, v))
 
+        const clampToNormal = (v: number) => Math.max(0, Math.min(1, v))
         const finalAngleTarget = this.lastSwingAngle + this.SWING_ANGLE * this.currentSwingSide
         const totalDelta = signedAngleDelta(this.lastSwingAngle, finalAngleTarget)
 
@@ -117,14 +117,14 @@ export const Sword = {
                 const alreadyTraveledDelta = signedAngleDelta(this.lastSwingAngle, currentAngleProgress)
                 const currentAngleProgressNormal = clampToNormal(alreadyTraveledDelta / totalDelta)
 
-                const tipX = player.x + Math.cos(currentAngleProgress - Math.PI/2) * 50
-                const tipY = player.y + Math.sin(currentAngleProgress - Math.PI/2) * 50
+                const tipX = playerPos.x + Math.cos(currentAngleProgress - Math.PI / 2) * 50
+                const tipY = playerPos.y + Math.sin(currentAngleProgress - Math.PI / 2) * 50
 
                 ParticleHandler.spawnParticle(
                     tipX,
                     tipY,
-                    Math.cos(currentAngleProgress - Math.PI/2) * 5,
-                    Math.sin(currentAngleProgress - Math.PI/2) * 5,
+                    Math.cos(currentAngleProgress - Math.PI / 2) * 5,
+                    Math.sin(currentAngleProgress - Math.PI / 2) * 5,
                     150,
                     0.98,
                     5 + (Math.min(currentAngleProgressNormal, 1 - currentAngleProgressNormal)) * 10

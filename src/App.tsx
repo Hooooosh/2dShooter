@@ -6,6 +6,8 @@ import { Player } from "./sprites/PlayerSprite";
 import { RoomSprite } from "./sprites/RoomSprite";
 import { ParticleHandler } from "./sprites/ParticleHandler";
 import HealthUI from "./react-components/health-ui";
+import { BulletHandler } from "./sprites/BulletHandler";
+import { BulletSpawner as BulletSpawnerTest } from "./sprites/BulletSpawnerSprite";
 
 extend({
   Container,
@@ -31,6 +33,9 @@ function Game() {
     RoomSprite.init(app)
     Input.init(app)
     ParticleHandler.init(app)
+    BulletHandler.init(app)
+
+    BulletSpawnerTest.init(app)
   }, [app])
 
   useEffect(() => {

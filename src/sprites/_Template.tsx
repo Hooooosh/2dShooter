@@ -1,6 +1,6 @@
 import * as PIXI from "pixi.js"
 import { Vector2 } from "../interfaces/genericInterfaces"
-import { ROOM_BOUNDS } from "../const/RoomData"
+import { RoomSprite } from "./RoomSprite"
 
 let sprite: PIXI.Sprite | null = null
 
@@ -44,10 +44,10 @@ export const Template = {
     applyKeepInRoomBoundssUpdate() {
         if(!sprite) return;
 
-        if (sprite.x - SPRITE_SIZE / 2 < ROOM_BOUNDS.left) sprite.x = ROOM_BOUNDS.left + SPRITE_SIZE / 2
-        if (sprite.x + SPRITE_SIZE / 2 > ROOM_BOUNDS.right) sprite.x = ROOM_BOUNDS.right - SPRITE_SIZE / 2
-        if (sprite.y - SPRITE_SIZE / 2 < ROOM_BOUNDS.top) sprite.y = ROOM_BOUNDS.top + SPRITE_SIZE / 2
-        if (sprite.y + SPRITE_SIZE / 2 > ROOM_BOUNDS.bottom) sprite.y = ROOM_BOUNDS.bottom - SPRITE_SIZE / 2
+        if (sprite.x - SPRITE_SIZE / 2 < RoomSprite.ROOM_BOUNDS.left) sprite.x = RoomSprite.ROOM_BOUNDS.left + SPRITE_SIZE / 2
+        if (sprite.x + SPRITE_SIZE / 2 > RoomSprite.ROOM_BOUNDS.right) sprite.x = RoomSprite.ROOM_BOUNDS.right - SPRITE_SIZE / 2
+        if (sprite.y - SPRITE_SIZE / 2 < RoomSprite.ROOM_BOUNDS.top) sprite.y = RoomSprite.ROOM_BOUNDS.top + SPRITE_SIZE / 2
+        if (sprite.y + SPRITE_SIZE / 2 > RoomSprite.ROOM_BOUNDS.bottom) sprite.y = RoomSprite.ROOM_BOUNDS.bottom - SPRITE_SIZE / 2
     },
 
 

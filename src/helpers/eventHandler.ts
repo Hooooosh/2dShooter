@@ -59,6 +59,7 @@ class _EventHandler {
   emit(event: GLOBAL_EVENTS.INTERACT, payload: { entityId: string }): void
   emit<K extends keyof EventMap>(event: K, payload?: EventMap[K]) {
     const handlers = this.events[event] as Set<(payload: EventMap[K]) => void> | undefined
+    console.warn(handlers)
 
     if (!handlers) {
       return
@@ -70,6 +71,8 @@ class _EventHandler {
     }
 
     handlers.forEach((handler) => handler(payload))
+
+
   }
 }
 

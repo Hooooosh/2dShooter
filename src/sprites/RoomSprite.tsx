@@ -17,6 +17,10 @@ export const RoomSprite = {
         right: window.innerWidth / 2 + ROOM_SIZE / 2,
     },
 
+    getRenderPosition(x: number, y: number) {
+        return { x: x + RoomSprite.ROOM_BOUNDS.left, y: y + RoomSprite.ROOM_BOUNDS.top }
+    },
+
     init(app: Application) {
         container = new Container()
 
