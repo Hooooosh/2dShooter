@@ -1,6 +1,6 @@
 import * as PIXI from "pixi.js"
 import { GenericEnemy, IGenericEnemy } from "./EnemySprite"
-import { TAnyBehaviorEntry } from "../const/enemyBehaviors"
+import { ENEMY_BEHAVIORS, TAnyBehaviorEntry, TFollowPlayerConfig, TShootPeriodicallyConfig } from "../const/enemyBehaviors"
 import { RoomSprite } from "./RoomSprite"
 
 let enemyContainer: PIXI.Container | null = null
@@ -20,18 +20,20 @@ export const EnemyHandler = {
         /* test */
         window.addEventListener("keydown", (e) => {
             if (e.code === "KeyE" && !e.repeat) {
-                const times = 30
-                const oneSegment = RoomSprite.ROOM_SIZE / (times + 2)
-                for (let x = oneSegment; x < RoomSprite.ROOM_SIZE - oneSegment; x += oneSegment) {
-                    for (let y = oneSegment; y < RoomSprite.ROOM_SIZE - oneSegment; y += oneSegment) {
-                        EnemyHandler.spawnEnemy(x, y, 3, undefined, 0)
-                    }
-                }
+                EnemyHandler.spawnEnemy(
+                    Math.random() * RoomSprite.ROOM_SIZE,
+                    Math.random() * RoomSprite.ROOM_SIZE,
+                    3,
+                    [
+                        { behavior: ENEMY_BEHAVIORS.followPlayerBehavior, config: { speed: 2.5, keepDistance: 200 } as TFollowPlayerConfig },
+                        { behavior: ENEMY_BEHAVIORS.shootPeriodicallyBehavior, config: { shootPeriod: 2500 } as TShootPeriodicallyConfig },
+                    ] as TAnyBehaviorEntry[],
+                )
             }
         })
     },
 
-    spawnEnemy(x: number, y: number, health?: number, maxHealth?: number, hurtboxSize?: number, texture?: PIXI.Texture, behaviors?: TAnyBehaviorEntry[]) {
+    spawnEnemy(x: number, y: number, health?: number, behaviors?: TAnyBehaviorEntry[], maxHealth?: number, hurtboxSize?: number, texture?: PIXI.Texture) {
         const enemy = new GenericEnemy(
             x,
             y,
@@ -53,7 +55,17 @@ export const EnemyHandler = {
 
     update(ticker: PIXI.Ticker) {
         for (const enemy of EnemyHandler.enemies) {
-            enemy.update(ticker)
+            
+            /* remove deleted from scene */
+            if (enemy.markedForDeletion) {
+                EnemyHandler.enemies.splice(EnemyHandler.enemies.indexOf(enemy), 1)
+                if (enemy.sprite && enemy.sprite.parent) {
+                    enemy.sprite.parent.removeChild(enemy.sprite)
+                }
+            }
+            else{
+                enemy.update(ticker)
+            }
         }
     }
 }

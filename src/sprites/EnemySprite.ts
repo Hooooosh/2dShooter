@@ -17,6 +17,7 @@ export interface IGenericEnemy {
     health: number
     maxHealth: number
     hurtboxSize: number
+    markedForDeletion: boolean
 
     sprite: PIXI.Sprite | undefined
     behaviors: TAnyBehaviorEntry[]
@@ -30,8 +31,9 @@ export class GenericEnemy implements IGenericEnemy {
     y = 0;
     health = 1;
     maxHealth = 1;
-    hurtboxSize = 30;
+    hurtboxSize = 0;
     currentIframesMs = 0;
+    markedForDeletion = false;
 
     sprite = new PIXI.Sprite();
     behaviors = [] as TAnyBehaviorEntry[];
@@ -41,7 +43,7 @@ export class GenericEnemy implements IGenericEnemy {
         this.y = y;
         this.health = health ?? maxHealth ?? 1;
         this.maxHealth = maxHealth ?? 1;
-        this.hurtboxSize = hurtboxSize ?? this.sprite.width * 0.6;
+        this.hurtboxSize = hurtboxSize ?? this.sprite.width;
         this.sprite = new PIXI.Sprite(texture ?? PIXI.Assets.get("enemy-placeholder"))
 
         this.sprite.anchor.set(0.5)
@@ -59,10 +61,14 @@ export class GenericEnemy implements IGenericEnemy {
         if (this.isInvulnerable()) return
         this.health -= amount ?? 1
         this.sprite.alpha = this.health / 3
+
+        if(this.health <= 0) {
+            this.markedForDeletion = true
+        }
     }
 
     update(ticker: PIXI.Ticker) {
-        if (!this.sprite) return
+        if (!this.sprite || this.markedForDeletion) return
 
 
         const pos = { x: this.x, y: this.y }
@@ -78,7 +84,7 @@ export class GenericEnemy implements IGenericEnemy {
         this.sprite.x = renderPos.x
         this.sprite.y = renderPos.y
         for (const { behavior, config } of this.behaviors) {
-            behavior(this, ticker.deltaTime, config)
+            behavior(this, ticker, config)
         }
     };
 }

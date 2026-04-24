@@ -12,6 +12,7 @@ interface IBullet {
     radius: number,
     life: number,
     maxLife: number,
+    markedForDeletion?: boolean,
     dampFactor: number,
     sprite: PIXI.Graphics
 }
@@ -24,6 +25,14 @@ export const BulletHandler = {
 
         app.stage.addChild(bulletContainer)
         app.ticker.add(this._update)
+
+
+        /* test */
+        window.addEventListener("keydown", (e) => {
+            if (e.code === "KeyQ" && !e.repeat) {
+                BulletHandler.spawnBullet(Player.x, Player.y - 200, 0, 5, 5000, 0.98)
+            }
+        })
     },
 
     spawnBullet(x: number, y: number, vx?: number, vy?: number, maxLife?: number, dampFactor?: number, radius?: number, sprite?: PIXI.Graphics) {
@@ -42,8 +51,8 @@ export const BulletHandler = {
             vy: vy ?? 0,
             radius: radius ?? 10,
             life: 0,
-            maxLife: maxLife ?? 1000,
-            dampFactor: dampFactor ?? 1,
+            maxLife: maxLife ?? 5000,
+            dampFactor: dampFactor ?? 0.995,
             sprite: sprite ?? _fallbackSprite
         }
 
@@ -63,6 +72,7 @@ export const BulletHandler = {
 
         for (let i = 0; i < BulletHandler.bullets.length; i++) {
             const b = BulletHandler.bullets[i]
+
             b.life += ms
 
             /* check if bullet is out of bounds or out of life */
@@ -71,10 +81,7 @@ export const BulletHandler = {
                 b.x < 0 || b.x > RoomSprite.ROOM_SIZE ||
                 b.y < 0 || b.y > RoomSprite.ROOM_SIZE
             ) {
-                bulletContainer?.removeChild(b.sprite)
-                BulletHandler.bullets.splice(i, 1)
-                i--
-                continue
+                b.markedForDeletion = true
             }
 
             /* check player hit */
@@ -89,11 +96,16 @@ export const BulletHandler = {
                 /* hit */
                 if (dx * dx + dy * dy <= r * r) {
                     Player.damage(1)
-                    bulletContainer?.removeChild(b.sprite)
-                    BulletHandler.bullets.splice(i, 1)
-                    i--
-                    continue
+                    b.markedForDeletion = true
                 }
+            }
+
+            /* remove if marked for deletion */
+            if (b.markedForDeletion) {
+                bulletContainer?.removeChild(b.sprite)
+                BulletHandler.bullets.splice(i, 1)
+                i--
+                continue
             }
 
             /* update pos */

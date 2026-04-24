@@ -46,8 +46,6 @@ export default function DebugCanvas() {
     }
 
     useEffect(() => {
-        const drawRectUnsub = EventHandler.on(GLOBAL_EVENTS._DEBUG_DRAW_RECT, drawRotatedRect)
-
         window.addEventListener("keydown", (e) => {
             if (e.code === "KeyP" && !e.repeat) {
                 if (isEnabled.current) {
@@ -58,11 +56,7 @@ export default function DebugCanvas() {
                 }
             }
         })
-
-        return () => {
-            drawRectUnsub()
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     function drawRotatedRect(hitbox: IHitbox) {

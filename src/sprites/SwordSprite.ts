@@ -17,8 +17,8 @@ await PIXI.Assets.load([
 ])
 
 export const Sword = {
-    SWING_COOLDOWN: 20,
-    SWING_DURATION: 10,
+    SWING_COOLDOWN: 400,
+    SWING_DURATION: 100,
     SWING_ANGLE: degToRad(90),
     SWING_BEZIER_CONTROLS: [0.22, 1.13, 0.75, 0.98] as [number, number, number, number],
 
@@ -58,7 +58,7 @@ export const Sword = {
         if (this.currentSwingCooldown >= this.SWING_COOLDOWN && sprite) {
             this.currentSwingCooldown = 0
             this.currentSwingSide *= -1
-            this.lastSwingAngle = sprite.rotation
+            this.hasRanHitboxThisSwing = false
             this.isSwinging = true
         }
     },
@@ -74,17 +74,22 @@ export const Sword = {
             mousePos.x - RoomSprite.getRenderPosition(playerPos.x, playerPos.y).x
         ) + Math.PI / 2
 
-        this.setPosition(playerPos.x, playerPos.y)
-
-        /* calculate sword angle */
-        if (this.currentSwingCooldown < this.SWING_COOLDOWN) {
-            this.currentSwingCooldown += ticker.deltaMS
-        }
-        else {
-            this.hasRanHitboxThisSwing = false
+        if (this.currentSwingCooldown > this.SWING_DURATION) {
             this.isSwinging = false
             sprite.rotation = angleToMouse + this.SWING_ANGLE / 2 * this.currentSwingSide
         }
+
+        /* calculate sword angle */
+        if (this.currentSwingCooldown < this.SWING_COOLDOWN) {
+            /* if first frame, snap rotation to mouse to avoid conflicts */
+            if (this.currentSwingCooldown == 0) {
+                sprite.rotation = angleToMouse - this.SWING_ANGLE / 2 * this.currentSwingSide
+                this.lastSwingAngle = sprite.rotation
+            }
+            this.currentSwingCooldown += ticker.deltaMS
+        }
+
+        this.setPosition(playerPos.x, playerPos.y)
 
         const oldAngle = sprite.rotation
         let newAngleAfterBezier
@@ -153,14 +158,12 @@ export const Sword = {
                     tipY,
                     Math.cos(currentAngleProgress - Math.PI / 2) * 5,
                     Math.sin(currentAngleProgress - Math.PI / 2) * 5,
-                    75,
+                    100,
                     0.98,
                     5 + (Math.min(currentAngleProgressNormal, 1 - currentAngleProgressNormal)) * 10,
                     new PIXI.Graphics({ alpha: 0.5 }).circle(0, 0, 50).fill(0xff0000)
                 )
             }
-
-
         }
     },
 }
