@@ -3,17 +3,17 @@ import { Application } from "pixi.js"
 
 export const Input = {
     mouseDown: false,
-    keyboardKeys: new Set<string>(),
+    continuousKbKeys: new Set<string>(),
 
     isKeyDown(code: string) {
-        return this.keyboardKeys.has(code)
+        return this.continuousKbKeys.has(code)
     },
 
     handleKeydown: (e: KeyboardEvent) => {
-        Input.keyboardKeys.add(e.code)
+        Input.continuousKbKeys.add(e.code)
     },
     handleKeyup: (e: KeyboardEvent) => {
-        Input.keyboardKeys.delete(e.code)
+        Input.continuousKbKeys.delete(e.code)
     },
 
     init(app: Application) {

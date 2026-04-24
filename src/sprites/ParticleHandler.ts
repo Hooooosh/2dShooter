@@ -3,7 +3,7 @@ import { RoomSprite } from "./RoomSprite"
 
 let particleContainer: PIXI.Container | null = null
 
-interface Particle {
+interface IParticle {
     x: number,
     y: number,
     vx: number,
@@ -16,18 +16,18 @@ interface Particle {
 }
 
 export const ParticleHandler = {
-    particles: [] as Particle[],
+    particles: [] as IParticle[],
 
-    init(app: PIXI.Application) {
+    _init(app: PIXI.Application) {
         particleContainer = new PIXI.Container()
 
         app.stage.addChild(particleContainer)
-        app.ticker.add(this.update)
+        app.ticker.add(this._update)
     },
 
     spawnParticle(x: number, y: number, vx?: number, vy?: number, maxLife?: number, dampFactor?: number, radius?: number, sprite?: PIXI.Graphics) {
         const _fallbackSprite = sprite ?? new PIXI.Graphics().circle(0, 0, radius ?? 5).fill(0xeeeeee)
-        const particle: Particle = {
+        const particle: IParticle = {
             x: x,
             y: y,
             vx: vx ?? 0,
@@ -46,7 +46,7 @@ export const ParticleHandler = {
         ParticleHandler.particles.push(particle)
     },
 
-    update(ticker: PIXI.Ticker) {
+    _update(ticker: PIXI.Ticker) {
         if (!ParticleHandler.particles) return;
 
         const ms = ticker.deltaMS

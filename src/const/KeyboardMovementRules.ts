@@ -2,7 +2,7 @@ import { Vector2 } from "../interfaces/genericInterfaces";
 
 const sqrt2per2 = Math.sqrt(2) / 2;
 
-interface MovementRule {
+export interface MovementRule {
     keys: string[],
     velocity: Vector2,
 }

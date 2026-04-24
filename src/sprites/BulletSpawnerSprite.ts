@@ -2,19 +2,29 @@ import * as PIXI from "pixi.js"
 import { BulletHandler } from "./BulletHandler"
 import { RoomSprite } from "./RoomSprite"
 
-export const BulletSpawner = {
+interface IBulletSpawner {
+    INTERVAL: number
+    currentInterval: number
+    x: number
+    y: number
+    lastAngle: number
+    _init(app: PIXI.Application): void
+    _update(ticker: PIXI.Ticker): void
+}
+
+export const BulletSpawner: IBulletSpawner = {
     INTERVAL: 200,
     currentInterval: 0,
     x: RoomSprite.ROOM_SIZE / 2,
     y: RoomSprite.ROOM_SIZE / 3,
     lastAngle: 0,
 
-    init(app: PIXI.Application) {
-        app.ticker.add(BulletSpawner.update)
+    _init(app: PIXI.Application) {
+        app.ticker.add(BulletSpawner._update)
         BulletHandler.spawnBullet(BulletSpawner.x, BulletSpawner.y, 0, 0, 99999, 0)
     },
 
-    update(ticker: PIXI.Ticker) {
+    _update(ticker: PIXI.Ticker) {
         const ms = ticker.deltaMS
 
         BulletSpawner.currentInterval -= ms

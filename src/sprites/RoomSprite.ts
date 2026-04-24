@@ -5,7 +5,6 @@ let container: Container | null = null
 const BANNER_SIZE = 100
 const ROOM_SIZE = window.innerHeight - BANNER_SIZE * 2
 
-console.log(ROOM_SIZE)
 export const RoomSprite = {
     BANNER_SIZE,
     ROOM_SIZE,
@@ -21,7 +20,7 @@ export const RoomSprite = {
         return { x: x + RoomSprite.ROOM_BOUNDS.left, y: y + RoomSprite.ROOM_BOUNDS.top }
     },
 
-    init(app: Application) {
+    _init(app: Application) {
         container = new Container()
 
         container.x = this.ROOM_BOUNDS.left

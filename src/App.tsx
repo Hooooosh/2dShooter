@@ -5,9 +5,10 @@ import { useEffect } from "react";
 import { Player } from "./sprites/PlayerSprite";
 import { RoomSprite } from "./sprites/RoomSprite";
 import { ParticleHandler } from "./sprites/ParticleHandler";
-import HealthUI from "./react-components/health-ui";
+import UiTopbar from "./react-components/ui-top-bar";
 import { BulletHandler } from "./sprites/BulletHandler";
-import { BulletSpawner as BulletSpawnerTest } from "./sprites/BulletSpawnerSprite";
+import { EnemyHandler } from "./sprites/EnemyHandler";
+import DebugCanvas from "./react-components/debug-canvas";
 
 extend({
   Container,
@@ -16,11 +17,12 @@ extend({
 export default function App() {
   return (
     <>
-      <HealthUI />
+      <UiTopbar />
+      <DebugCanvas />
+
       <Application resizeTo={window}>
         <Game />
       </Application>
-
     </>
   )
 }
@@ -29,13 +31,13 @@ function Game() {
   const { app } = useApplication()
 
   useEffect(() => {
-    Player.init(app)
-    RoomSprite.init(app)
+    Player._init(app)
+    RoomSprite._init(app)
     Input.init(app)
-    ParticleHandler.init(app)
-    BulletHandler.init(app)
+    ParticleHandler._init(app)
+    BulletHandler._init(app)
+    EnemyHandler._init(app)
 
-    BulletSpawnerTest.init(app)
   }, [app])
 
   useEffect(() => {

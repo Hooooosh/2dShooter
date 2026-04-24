@@ -4,7 +4,7 @@ import { Player } from "./PlayerSprite"
 
 let bulletContainer: PIXI.Container | null = null
 
-interface Bullet {
+interface IBullet {
     x: number,
     y: number,
     vx: number,
@@ -17,13 +17,13 @@ interface Bullet {
 }
 
 export const BulletHandler = {
-    bullets: [] as Bullet[],
+    bullets: [] as IBullet[],
 
-    init(app: PIXI.Application) {
+    _init(app: PIXI.Application) {
         bulletContainer = new PIXI.Container()
 
         app.stage.addChild(bulletContainer)
-        app.ticker.add(this.update)
+        app.ticker.add(this._update)
     },
 
     spawnBullet(x: number, y: number, vx?: number, vy?: number, maxLife?: number, dampFactor?: number, radius?: number, sprite?: PIXI.Graphics) {
@@ -35,7 +35,7 @@ export const BulletHandler = {
                 .setStrokeStyle({ width: 3, color: 0xee0000 })
                 .stroke()
 
-        const particle: Bullet = {
+        const particle: IBullet = {
             x: x,
             y: y,
             vx: vx ?? 0,
@@ -56,7 +56,7 @@ export const BulletHandler = {
         BulletHandler.bullets.push(particle)
     },
 
-    update(ticker: PIXI.Ticker) {
+    _update(ticker: PIXI.Ticker) {
         if (!BulletHandler.bullets) return;
 
         const ms = ticker.deltaMS
@@ -78,19 +78,22 @@ export const BulletHandler = {
             }
 
             /* check player hit */
-            const ppos = { x: Player.x, y: Player.y }
-            const psize = Player.getSprite()?.width ?? 0 / 2
-            const dx = b.x - ppos.x
-            const dy = b.y - ppos.y
-            const r = psize / 2 + b.radius / 2
+            if (!Player.isInvulnerable()) {
+                const LENIENCY_FACTOR = 0.9
+                const ppos = { x: Player.x, y: Player.y }
+                const psize = Player.SPRITE_SIZE
+                const dx = b.x - ppos.x
+                const dy = b.y - ppos.y
+                const r = (psize / 2 + b.radius / 2) * LENIENCY_FACTOR
 
-            /* hit */
-            if (dx * dx + dy * dy <= r * r) {
-                Player.damage(1)
-                bulletContainer?.removeChild(b.sprite)
-                BulletHandler.bullets.splice(i, 1)
-                i--
-                continue
+                /* hit */
+                if (dx * dx + dy * dy <= r * r) {
+                    Player.damage(1)
+                    bulletContainer?.removeChild(b.sprite)
+                    BulletHandler.bullets.splice(i, 1)
+                    i--
+                    continue
+                }
             }
 
             /* update pos */

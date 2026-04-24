@@ -1,19 +1,25 @@
+import { IHitbox } from "../sprites/HitboxHandler";
+
 export enum GLOBAL_EVENTS {
   HEALTH_CHANGED,
+  STAMINA_CHANGED,
   PAUSE,
   UNPAUSE,
   TELEPORT,
   INTERACT,
   SCREEN_RESOLUTION_REFRESH,
+  _DEBUG_DRAW_RECT
 }
 
 type EventMap = {
   [GLOBAL_EVENTS.HEALTH_CHANGED]: void;
+  [GLOBAL_EVENTS.STAMINA_CHANGED]: void;
   [GLOBAL_EVENTS.PAUSE]: void;
   [GLOBAL_EVENTS.UNPAUSE]: void;
   [GLOBAL_EVENTS.TELEPORT]: { x: number; y: number };
   [GLOBAL_EVENTS.INTERACT]: { entityId: string };
   [GLOBAL_EVENTS.SCREEN_RESOLUTION_REFRESH]: void;
+  [GLOBAL_EVENTS._DEBUG_DRAW_RECT]: IHitbox;
 }
 
 class _EventHandler {
@@ -52,14 +58,15 @@ class _EventHandler {
   }
 
   emit(event: GLOBAL_EVENTS.HEALTH_CHANGED): void
+  emit(event: GLOBAL_EVENTS.STAMINA_CHANGED): void
   emit(event: GLOBAL_EVENTS.PAUSE): void
   emit(event: GLOBAL_EVENTS.UNPAUSE): void
   emit(event: GLOBAL_EVENTS.SCREEN_RESOLUTION_REFRESH): void
   emit(event: GLOBAL_EVENTS.TELEPORT, payload: { x: number; y: number }): void
   emit(event: GLOBAL_EVENTS.INTERACT, payload: { entityId: string }): void
+  emit(event: GLOBAL_EVENTS._DEBUG_DRAW_RECT, payload: IHitbox): void
   emit<K extends keyof EventMap>(event: K, payload?: EventMap[K]) {
     const handlers = this.events[event] as Set<(payload: EventMap[K]) => void> | undefined
-    console.warn(handlers)
 
     if (!handlers) {
       return
