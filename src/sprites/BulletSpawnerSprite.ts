@@ -1,5 +1,5 @@
 import * as PIXI from "pixi.js"
-import { BulletHandler } from "./BulletHandler"
+import { BulletHandler } from "../handlers/BulletHandler"
 import { RoomSprite } from "./RoomSprite"
 
 interface IBulletSpawner {

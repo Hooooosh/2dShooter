@@ -1,7 +1,7 @@
 import { Application } from "pixi.js"
 
 
-export const Input = {
+export const GenericInputHandler = {
     mouseDown: false,
     continuousKbKeys: new Set<string>(),
 
@@ -10,15 +10,15 @@ export const Input = {
     },
 
     handleKeydown: (e: KeyboardEvent) => {
-        Input.continuousKbKeys.add(e.code)
+        GenericInputHandler.continuousKbKeys.add(e.code)
     },
     handleKeyup: (e: KeyboardEvent) => {
-        Input.continuousKbKeys.delete(e.code)
+        GenericInputHandler.continuousKbKeys.delete(e.code)
     },
 
-    init(app: Application) {
-        window.addEventListener("keydown", Input.handleKeydown)
-        window.addEventListener("keyup", Input.handleKeyup)
+    _init(app: Application) {
+        window.addEventListener("keydown", GenericInputHandler.handleKeydown)
+        window.addEventListener("keyup", GenericInputHandler.handleKeyup)
 
         app.stage.eventMode = "static"
         app.stage.interactive = true

@@ -1,14 +1,16 @@
 import { Application, extend, useApplication } from "@pixi/react";
 import { Container } from "pixi.js";
-import { Input } from "./helpers/input";
-import { useEffect } from "react";
+import { GenericInputHandler } from "./helpers/input";
+import { useEffect, useRef } from "react";
 import { Player } from "./sprites/PlayerSprite";
 import { RoomSprite } from "./sprites/RoomSprite";
-import { ParticleHandler } from "./sprites/ParticleHandler";
+import { ParticleHandler } from "./handlers/ParticleHandler";
 import UiTopbar from "./react-components/ui-top-bar";
-import { BulletHandler } from "./sprites/BulletHandler";
-import { EnemyHandler } from "./sprites/EnemyHandler";
+import { BulletHandler } from "./handlers/BulletHandler";
+import { EnemyHandler } from "./handlers/EnemyHandler";
 import DebugCanvas from "./react-components/debug-canvas";
+import { _DebugFunctions } from "./sprites/_DebugFunctions";
+import { GameLoopHandler } from "./handlers/GameLoopHandler";
 
 extend({
   Container,
@@ -29,14 +31,24 @@ export default function App() {
 
 function Game() {
   const { app } = useApplication()
+  const isMounted = useRef(false)
 
   useEffect(() => {
-    Player._init(app)
+    if(isMounted.current) return;
+    isMounted.current = true
+
+    GenericInputHandler._init(app)
+    
     RoomSprite._init(app)
-    Input.init(app)
+    Player._init(app)
+    
     ParticleHandler._init(app)
-    BulletHandler._init(app)
     EnemyHandler._init(app)
+    BulletHandler._init(app)
+
+    GameLoopHandler._init(app)
+    
+    _DebugFunctions._init()
 
   }, [app])
 

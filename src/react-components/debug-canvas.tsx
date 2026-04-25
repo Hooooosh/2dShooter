@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react"
 import { EventHandler, GLOBAL_EVENTS } from "../helpers/eventHandler"
-import { IHitbox } from "../sprites/HitboxHandler"
+import { IHitbox } from "../handlers/HitboxHandler"
 
 export default function DebugCanvas() {
     const isEnabled = useRef(false)

@@ -1,4 +1,5 @@
-import { IHitbox } from "../sprites/HitboxHandler";
+import { IHitbox } from "../handlers/HitboxHandler";
+import { Vector2 } from "../interfaces/genericInterfaces";
 
 export enum GLOBAL_EVENTS {
   HEALTH_CHANGED,
@@ -7,6 +8,9 @@ export enum GLOBAL_EVENTS {
   UNPAUSE,
   TELEPORT,
   INTERACT,
+  STAGE_CLEAR,
+  DOOR_ENTER,
+  ENEMY_DIE,
   SCREEN_RESOLUTION_REFRESH,
   _DEBUG_DRAW_RECT
 }
@@ -16,8 +20,11 @@ type EventMap = {
   [GLOBAL_EVENTS.STAMINA_CHANGED]: void;
   [GLOBAL_EVENTS.PAUSE]: void;
   [GLOBAL_EVENTS.UNPAUSE]: void;
-  [GLOBAL_EVENTS.TELEPORT]: { x: number; y: number };
+  [GLOBAL_EVENTS.TELEPORT]: Vector2;
   [GLOBAL_EVENTS.INTERACT]: { entityId: string };
+  [GLOBAL_EVENTS.DOOR_ENTER]: { doorIdx: number };
+  [GLOBAL_EVENTS.ENEMY_DIE]: void;
+  [GLOBAL_EVENTS.STAGE_CLEAR]: void;
   [GLOBAL_EVENTS.SCREEN_RESOLUTION_REFRESH]: void;
   [GLOBAL_EVENTS._DEBUG_DRAW_RECT]: IHitbox;
 }
@@ -62,8 +69,11 @@ class _EventHandler {
   emit(event: GLOBAL_EVENTS.PAUSE): void
   emit(event: GLOBAL_EVENTS.UNPAUSE): void
   emit(event: GLOBAL_EVENTS.SCREEN_RESOLUTION_REFRESH): void
-  emit(event: GLOBAL_EVENTS.TELEPORT, payload: { x: number; y: number }): void
+  emit(event: GLOBAL_EVENTS.TELEPORT, payload: Vector2): void
   emit(event: GLOBAL_EVENTS.INTERACT, payload: { entityId: string }): void
+  emit(event: GLOBAL_EVENTS.DOOR_ENTER, payload: { doorIdx: number }): void
+  emit(event: GLOBAL_EVENTS.ENEMY_DIE): void
+  emit(event: GLOBAL_EVENTS.STAGE_CLEAR): void
   emit(event: GLOBAL_EVENTS._DEBUG_DRAW_RECT, payload: IHitbox): void
   emit<K extends keyof EventMap>(event: K, payload?: EventMap[K]) {
     const handlers = this.events[event] as Set<(payload: EventMap[K]) => void> | undefined

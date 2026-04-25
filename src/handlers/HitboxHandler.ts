@@ -1,6 +1,8 @@
 import { FastIsPointInCircle } from "../helpers/dist";
 import { EnemyHandler } from "./EnemyHandler";
-import { IGenericEnemy } from "./EnemySprite"
+import { IGenericEnemy } from "../sprites/EnemySprite"
+import { ParticleHandler } from "./ParticleHandler";
+import { Player } from "../sprites/PlayerSprite";
 
 export interface IHitbox {
     xCenter: number,
@@ -16,24 +18,32 @@ export interface IHitcircle {
     r: number
 }
 
-export const HitboxHandler = {
-    runHitboxAgainstEnemies(hitbox: IHitbox) {
-        if (!EnemyHandler.enemies) return;
+export function RollCrit() {
+    return Math.random() < Player.critChance
+}
 
+export const HitboxHandler = {
+    runHitboxAgainstEnemies(hitbox: IHitbox, damage = 1) {
+        if (!EnemyHandler.enemies) return;
+        
         for (let i = 0; i < EnemyHandler.enemies.length; i++) {
-            if (!EnemyHandler.enemies[i].sprite) continue
+            const e = EnemyHandler.enemies[i]
+            if (!e.sprite) continue
 
             const isRelativelyClose = FastIsPointInCircle(
-                { x: EnemyHandler.enemies[i].x, y: EnemyHandler.enemies[i].y },
+                { x: e.x, y: e.y },
                 { x: hitbox.xCenter, y: hitbox.yCenter },
                 Math.max(hitbox.width, hitbox.height) * 0.75
             )
 
             if (isRelativelyClose) {
-                const isHit = HitboxHandler._runHitboxAgainstSpecificEnemy(EnemyHandler.enemies[i], hitbox)
+                const isHit = HitboxHandler._runHitboxAgainstSpecificEnemy(e, hitbox)
 
                 if (isHit) {
-                    EnemyHandler.enemies[i].damage()
+                    const isCrit = RollCrit()
+                    if(isCrit) damage *= 2
+                    e.damage(damage)
+                    ParticleHandler.spawnDamageNumber(e.x, e.y, damage, isCrit)
                 }
             }
         }

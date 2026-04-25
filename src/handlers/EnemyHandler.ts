@@ -1,7 +1,9 @@
 import * as PIXI from "pixi.js"
-import { GenericEnemy, IGenericEnemy } from "./EnemySprite"
-import { ENEMY_BEHAVIORS, TAnyBehaviorEntry, TFollowPlayerConfig, TShootPeriodicallyConfig } from "../const/enemyBehaviors"
-import { RoomSprite } from "./RoomSprite"
+import { GenericEnemy, IGenericEnemy } from "../sprites/EnemySprite"
+import { TAnyBehaviorEntry } from "../const/enemyBehaviors"
+import { DRAW_ORDERS } from "../const/drawOrders"
+import { RoomSprite } from "../sprites/RoomSprite"
+import { EventHandler, GLOBAL_EVENTS } from "../helpers/eventHandler"
 
 let enemyContainer: PIXI.Container | null = null
 
@@ -11,34 +13,20 @@ export const EnemyHandler = {
 
     _init(app: PIXI.Application) {
         enemyContainer = new PIXI.Container()
+        enemyContainer.zIndex = DRAW_ORDERS.ENEMIES
 
         app.stage.addChild(enemyContainer)
         app.ticker.add(this.update)
 
         this.appRef = app
-
-        /* test */
-        window.addEventListener("keydown", (e) => {
-            if (e.code === "KeyE" && !e.repeat) {
-                EnemyHandler.spawnEnemy(
-                    Math.random() * RoomSprite.ROOM_SIZE,
-                    Math.random() * RoomSprite.ROOM_SIZE,
-                    3,
-                    [
-                        { behavior: ENEMY_BEHAVIORS.followPlayerBehavior, config: { speed: 2.5, keepDistance: 200 } as TFollowPlayerConfig },
-                        { behavior: ENEMY_BEHAVIORS.shootPeriodicallyBehavior, config: { shootPeriod: 2500 } as TShootPeriodicallyConfig },
-                    ] as TAnyBehaviorEntry[],
-                )
-            }
-        })
     },
 
-    spawnEnemy(x: number, y: number, health?: number, behaviors?: TAnyBehaviorEntry[], maxHealth?: number, hurtboxSize?: number, texture?: PIXI.Texture) {
+    spawnEnemy(x?: number, y?: number, health?: number, behaviors?: TAnyBehaviorEntry[], maxHealth?: number, hurtboxSize?: number, texture?: PIXI.Texture) {
         const enemy = new GenericEnemy(
-            x,
-            y,
+            x ?? Math.random() * RoomSprite.ROOM_SIZE,
+            y ?? Math.random() * RoomSprite.ROOM_SIZE,
             maxHealth,
-            health = health ?? maxHealth ?? undefined,
+            health = health ?? maxHealth,
             texture ?? PIXI.Assets.get("enemy-placeholder"),
             behaviors,
             hurtboxSize
@@ -58,13 +46,14 @@ export const EnemyHandler = {
             
             /* remove deleted from scene */
             if (enemy.markedForDeletion) {
+                EventHandler.emit(GLOBAL_EVENTS.ENEMY_DIE)
                 EnemyHandler.enemies.splice(EnemyHandler.enemies.indexOf(enemy), 1)
                 if (enemy.sprite && enemy.sprite.parent) {
                     enemy.sprite.parent.removeChild(enemy.sprite)
                 }
             }
             else{
-                enemy.update(ticker)
+                enemy._update(ticker)
             }
         }
     }

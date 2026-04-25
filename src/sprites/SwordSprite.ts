@@ -1,10 +1,10 @@
 import * as PIXI from "pixi.js"
 import { Player } from "./PlayerSprite"
-import { ParticleHandler } from "./ParticleHandler"
+import { ParticleHandler } from "../handlers/ParticleHandler"
 import cubicBezierEase from "../helpers/bezier"
 import { degToRad, signedAngleDelta } from "../helpers/angle"
 import { RoomSprite } from "./RoomSprite"
-import { HitboxHandler } from "./HitboxHandler"
+import { HitboxHandler } from "../handlers/HitboxHandler"
 import { EventHandler, GLOBAL_EVENTS } from "../helpers/eventHandler"
 
 let sprite: PIXI.Sprite | null = null
@@ -54,7 +54,7 @@ export const Sword = {
         sprite.y = renderPos.y
     },
 
-    attemptSwing() {
+    _attemptAttack() {
         if (this.currentSwingCooldown >= this.SWING_COOLDOWN && sprite) {
             this.currentSwingCooldown = 0
             this.currentSwingSide *= -1
@@ -112,13 +112,16 @@ export const Sword = {
                 const hitboxX = playerPos.x + Math.cos(angleAtHalfProgress) * this.SWORD_OFFSET_FROM_PLAYER * (sprite.height - hitboxThickness / 3)
                 const hitboxY = playerPos.y + Math.sin(angleAtHalfProgress) * this.SWORD_OFFSET_FROM_PLAYER * (sprite.height - hitboxThickness / 3)
                 this.hasRanHitboxThisSwing = true
-                HitboxHandler.runHitboxAgainstEnemies({
-                    xCenter: hitboxX,
-                    yCenter: hitboxY,
-                    width: hitboxThickness,
-                    height: hitboxWidth,
-                    rot: angleAtHalfProgress
-                })
+                HitboxHandler.runHitboxAgainstEnemies(
+                    {
+                        xCenter: hitboxX,
+                        yCenter: hitboxY,
+                        width: hitboxThickness,
+                        height: hitboxWidth,
+                        rot: angleAtHalfProgress
+                    },
+                    Player.baseDmg
+                )
                 EventHandler.emit(GLOBAL_EVENTS._DEBUG_DRAW_RECT, {
                     xCenter: RoomSprite.getRenderPosition(hitboxX, hitboxY).x,
                     yCenter: RoomSprite.getRenderPosition(hitboxX, hitboxY).y,
@@ -156,12 +159,14 @@ export const Sword = {
                 ParticleHandler.spawnParticle(
                     tipX,
                     tipY,
-                    Math.cos(currentAngleProgress - Math.PI / 2) * 5,
-                    Math.sin(currentAngleProgress - Math.PI / 2) * 5,
+                    Math.cos(currentAngleProgress - Math.PI / 2) * 2,
+                    Math.sin(currentAngleProgress - Math.PI / 2) * 2,
                     100,
+                    0xffffff,
+                    0.3,
                     0.98,
-                    5 + (Math.min(currentAngleProgressNormal, 1 - currentAngleProgressNormal)) * 10,
-                    new PIXI.Graphics({ alpha: 0.5 }).circle(0, 0, 50).fill(0xff0000)
+                    2 + (Math.min(currentAngleProgressNormal, 1 - currentAngleProgressNormal)) * 10,
+                    new PIXI.Graphics().circle(0, 0, 50)
                 )
             }
         }

@@ -1,6 +1,7 @@
 import * as PIXI from "pixi.js"
-import { RoomSprite } from "./RoomSprite"
-import { Player } from "./PlayerSprite"
+import { RoomSprite } from "../sprites/RoomSprite"
+import { Player } from "../sprites/PlayerSprite"
+import { DRAW_ORDERS } from "../const/drawOrders"
 
 let bulletContainer: PIXI.Container | null = null
 
@@ -22,6 +23,7 @@ export const BulletHandler = {
 
     _init(app: PIXI.Application) {
         bulletContainer = new PIXI.Container()
+        bulletContainer.zIndex = DRAW_ORDERS.BULLETS
 
         app.stage.addChild(bulletContainer)
         app.ticker.add(this._update)

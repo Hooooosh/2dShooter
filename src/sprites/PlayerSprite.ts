@@ -1,13 +1,15 @@
 import * as PIXI from "pixi.js"
 import { ALL_MOVEMENT_KEYS, KEYBOARD_MOVEMENT_RULES, MovementRule } from "../const/KeyboardMovementRules"
 import { Sword } from "./SwordSprite"
-import { Input } from "../helpers/input"
+import { GenericInputHandler } from "../helpers/input"
 import { EventHandler, GLOBAL_EVENTS } from "../helpers/eventHandler"
 import { RoomSprite } from "./RoomSprite"
 import { Vector2 } from "../interfaces/genericInterfaces"
 import cubicBezierEase from "../helpers/bezier"
 import getSpritePosClampedToBounds from "../helpers/getSpritePosClampedToBounds"
 import { normalizeVector } from "../helpers/vector"
+import { ParticleHandler } from "../handlers/ParticleHandler"
+import { DRAW_ORDERS } from "../const/drawOrders"
 
 let sprite: PIXI.Sprite | null = null
 
@@ -17,6 +19,8 @@ await PIXI.Assets.load([
         src: "/assets/player.png"
     }
 ])
+
+export type TWeaponTypes = typeof Sword | undefined
 
 interface IPlayer {
     SPRITE_SIZE: number
@@ -39,6 +43,13 @@ interface IPlayer {
     lastDashVector: Vector2
     msSinceLastDash: number
 
+    baseDmg: number
+    critChance: number
+
+    currentWeapon: TWeaponTypes,
+
+    _accumulatedMovementPxForStepAnim: number
+
     x: number
     y: number
     _init(app: PIXI.Application): void
@@ -47,6 +58,7 @@ interface IPlayer {
     setPosition(x: number, y: number): void
     _getCurrentKeyboardMovementRule(): MovementRule | undefined
 
+    attemptAttack(): void
     damage(amount?: number): void
     healTo(amount?: number): void
     isInvulnerable(): boolean
@@ -78,11 +90,20 @@ export const Player: IPlayer = {
     lastDashVector: { x: 0, y: 0 },
     msSinceLastDash: 99999,
 
+
+    baseDmg: 1,
+    critChance: 0.1,
+    currentWeapon: undefined,
+
+    _accumulatedMovementPxForStepAnim: 1,
+
     x: 0,
     y: 0,
 
     _init(app: PIXI.Application) {
         sprite = new PIXI.Sprite(PIXI.Assets.get("player"))
+
+        sprite.zIndex = DRAW_ORDERS.PLAYER
 
         sprite.anchor.set(0.5)
         Player.x = RoomSprite.ROOM_SIZE / 2
@@ -92,19 +113,13 @@ export const Player: IPlayer = {
 
         app.ticker.add(this._update)
 
-        Sword._init(app)
+        Player.currentWeapon = Sword
+        Player.currentWeapon._init(app)
 
-        /* setup key listeners */
+        /* dash eventlistener */
         window.addEventListener("keydown", (e) => {
-            /* dash setup */
             if (e.code === "Space" && !e.repeat) {
                 Player._attemptDashTowardsVector(Player.lastMoveVector)
-            }
-            if (e.code === "KeyH" && !e.repeat) {
-                Player.damage(1)
-            }
-            if (e.code === "KeyJ" && !e.repeat) {
-                Player.healTo(Player.MAX_HEALTH)
             }
         })
     },
@@ -125,12 +140,15 @@ export const Player: IPlayer = {
         Player.y = y
     },
 
-    damage(amount?: number) {
+    damage(amount = 1) {
         if (Player.isInvulnerable()) return
-        Player.health -= amount ?? 1
+        Player.health -= amount
         Player._hurtFlickerAnimRemainingMs = Player.HURT_IFRAMES
         Player.currentIframesMs = Player.HURT_IFRAMES
         EventHandler.emit(GLOBAL_EVENTS.HEALTH_CHANGED)
+
+        /* player damage particles */
+        ParticleHandler.spawnParticleExplosion(this.x, this.y, 4, amount * 5 + 10, 0.7, 0xff0000)
     },
 
     healTo(amount?: number) {
@@ -139,7 +157,11 @@ export const Player: IPlayer = {
         EventHandler.emit(GLOBAL_EVENTS.HEALTH_CHANGED)
     },
 
-
+    attemptAttack() {
+        if (Player.currentWeapon) {
+            Player.currentWeapon._attemptAttack()
+        }
+    },
 
     isInvulnerable() {
         return Player.currentIframesMs > 0
@@ -148,6 +170,7 @@ export const Player: IPlayer = {
     _attemptDashTowardsVector(vector: Vector2) {
         if (Player.msSinceLastDash < Player.DASH_DURATION) return
         if (Player.currentStamina < 1) return
+        if (Player.lastMoveVector.x === 0 && Player.lastMoveVector.y === 0) return
         Player.lastDashedFrom = { x: Player.x, y: Player.y }
         Player.lastDashVector = normalizeVector(vector)
         Player.msSinceLastDash = 0
@@ -158,7 +181,7 @@ export const Player: IPlayer = {
 
 
     _getCurrentKeyboardMovementRule() {
-        const movementInputs = Array.from(Input.continuousKbKeys).filter((key) =>
+        const movementInputs = Array.from(GenericInputHandler.continuousKbKeys).filter((key) =>
             ALL_MOVEMENT_KEYS.includes(key)
         )
         return KEYBOARD_MOVEMENT_RULES.find((r) =>
@@ -173,14 +196,15 @@ export const Player: IPlayer = {
 
 
         /* attempt sword swing if mouse down */
-        if (Input.mouseDown) {
-            Sword.attemptSwing()
+        if (GenericInputHandler.mouseDown) {
+            Player.attemptAttack()
         }
 
 
         /* movement when not currently dashing */
-        if (!(Player.msSinceLastDash < Player.DASH_DURATION)) {
-            const movementInputs = Array.from(Input.continuousKbKeys).filter((key) =>
+        const currentlyDashing = Player.msSinceLastDash < Player.DASH_DURATION
+        if (!currentlyDashing) {
+            const movementInputs = Array.from(GenericInputHandler.continuousKbKeys).filter((key) =>
                 ALL_MOVEMENT_KEYS.includes(key)
             )
             const rule = KEYBOARD_MOVEMENT_RULES.find((r) =>
@@ -191,15 +215,16 @@ export const Player: IPlayer = {
                 _newMovementVector.y += rule.velocity.y * ticker.deltaTime * Player.SPEED
             }
         }
-
-
-        /* dashing calc */
         else {
+            /* dashing calc */
             Player.msSinceLastDash += ticker.deltaMS
             const _newLinearProgress = Player.msSinceLastDash / Player.DASH_DURATION
             const _newInterpolProgress = cubicBezierEase(_newLinearProgress, 0.31, 0.89, 1, 0.97)
 
-            const currentPlayerPosOnVector = { x: Player.x - Player.lastDashedFrom.x, y: Player.y - Player.lastDashedFrom.y }
+            const currentPlayerPosOnVector = { 
+                x: Player.x - Player.lastDashedFrom.x, 
+                y: Player.y - Player.lastDashedFrom.y 
+            }
             const newPlayerPosOnVector = {
                 x: _newInterpolProgress * Player.DASH_DISTANCE * Player.lastDashVector.x,
                 y: _newInterpolProgress * Player.DASH_DISTANCE * Player.lastDashVector.y
@@ -253,7 +278,31 @@ export const Player: IPlayer = {
         Player.y = newPos.y
 
         /* save move vector for later */
-        Player.lastMoveVector = { x: _newMovementVector.x, y: _newMovementVector.y }
+
+        /* accumulate movement for step animation */
+        if (_newMovementVector.x !== 0 || _newMovementVector.y !== 0) {
+            Player.lastMoveVector = { x: _newMovementVector.x, y: _newMovementVector.y }
+
+            const _steppingSide = Math.abs(Player._accumulatedMovementPxForStepAnim) / Player._accumulatedMovementPxForStepAnim;
+            Player._accumulatedMovementPxForStepAnim += (Math.abs(_newMovementVector.x) + Math.abs(_newMovementVector.y)) * _steppingSide
+
+            /* run step animation */
+            if (Math.abs(Player._accumulatedMovementPxForStepAnim) > 70) {
+                Player._accumulatedMovementPxForStepAnim = -_steppingSide
+                ParticleHandler.spawnParticle(
+                    Player.x + _steppingSide * 10,
+                    Player.y + _steppingSide * 10,
+                    undefined,
+                    undefined,
+                    1200,
+                    undefined,
+                    0.05,
+                    undefined,
+                    8,
+                    new PIXI.Graphics().circle(0, 0, 0).fill({ color: 0xffffff })
+                )
+            }
+        }
 
         /* apply internal pos to sprite */
         const renderPos = RoomSprite.getRenderPosition(Player.x, Player.y)

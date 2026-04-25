@@ -2,6 +2,8 @@ import * as PIXI from "pixi.js"
 import { TAnyBehaviorEntry } from "../const/enemyBehaviors";
 import getSpritePosClampedToBounds from "../helpers/getSpritePosClampedToBounds";
 import { RoomSprite } from "./RoomSprite";
+import { ParticleHandler } from "../handlers/ParticleHandler";
+import { EnemyHandler } from "../handlers/EnemyHandler";
 
 await PIXI.Assets.load([
     {
@@ -9,7 +11,6 @@ await PIXI.Assets.load([
         src: "/assets/enemy-placeholder.png"
     }
 ])
-
 
 export interface IGenericEnemy {
     x: number
@@ -21,9 +22,10 @@ export interface IGenericEnemy {
 
     sprite: PIXI.Sprite | undefined
     behaviors: TAnyBehaviorEntry[]
-    update(ticker: PIXI.Ticker): void
+    _update(ticker: PIXI.Ticker): void
     damage(amount?: number): void
     isInvulnerable(): boolean
+    instakill(): void
 }
 
 export class GenericEnemy implements IGenericEnemy {
@@ -43,14 +45,19 @@ export class GenericEnemy implements IGenericEnemy {
         this.y = y;
         this.health = health ?? maxHealth ?? 1;
         this.maxHealth = maxHealth ?? 1;
-        this.hurtboxSize = hurtboxSize ?? this.sprite.width;
         this.sprite = new PIXI.Sprite(texture ?? PIXI.Assets.get("enemy-placeholder"))
+        this.hurtboxSize = hurtboxSize ?? this.sprite.width;
 
         this.sprite.anchor.set(0.5)
         this.sprite.x = x
         this.sprite.y = y
 
         this.behaviors = behaviors ?? []
+
+        console.log("created enemy")
+
+        /* explosion when enemy spawns */
+        ParticleHandler.spawnParticleExplosion(x, y)
     }
 
     isInvulnerable() {
@@ -59,15 +66,28 @@ export class GenericEnemy implements IGenericEnemy {
 
     damage(amount?: number) {
         if (this.isInvulnerable()) return
-        this.health -= amount ?? 1
-        this.sprite.alpha = this.health / 3
 
-        if(this.health <= 0) {
+        amount ??= 1
+
+        this.health -= amount
+
+        if (this.health <= 0) {
+            /* die */
             this.markedForDeletion = true
+            ParticleHandler.spawnParticleExplosion(this.x, this.y, 5, Math.min(50, this.maxHealth * 5) + 5, 0.8)
+            ParticleHandler.spawnCircleExplosion(this.x, this.y, 100, this.sprite.width / 2)
+        }
+        else {
+            /* normal damage particles */
+            ParticleHandler.spawnParticleExplosion(this.x, this.y, undefined, Math.min(15, amount * 2 + 2))
         }
     }
 
-    update(ticker: PIXI.Ticker) {
+    instakill() {
+        this.damage(this.health)
+    }
+
+    _update(ticker: PIXI.Ticker) {
         if (!this.sprite || this.markedForDeletion) return
 
 
@@ -80,11 +100,31 @@ export class GenericEnemy implements IGenericEnemy {
 
         /* get render pos */
         const renderPos = RoomSprite.getRenderPosition(pos.x, pos.y)
-
         this.sprite.x = renderPos.x
         this.sprite.y = renderPos.y
+
+        /* run all behavior */
         for (const { behavior, config } of this.behaviors) {
             behavior(this, ticker, config)
         }
-    };
+
+        /* nudge away if clipping another enemy */
+        EnemyHandler.enemies.forEach(e => {
+            if (e == this || e.markedForDeletion || !e.sprite) return
+            const dx = e.x - this.x
+            const dy = e.y - this.y
+            const dstSq = dx * dx + dy * dy
+
+            const minDist = (this.hurtboxSize + e.hurtboxSize) / 2 * 0.8 /* added leniency */
+
+            if (dstSq > 0 && dstSq < minDist ** 2) {
+                const dist = Math.sqrt(dstSq)
+                const overlap = (minDist - dist) * 0.5
+                const distInverse = 1 / dist
+                
+                this.x -= dx * distInverse * overlap
+                this.y -= dy * distInverse * overlap
+            }
+        })
+    }
 }
