@@ -191,6 +191,7 @@ export const GameLoopHandler = {
 
     _doorEnterHandler(payload: { doorIdx: number }) {
         /* reset wave and doors */
+        console.log(payload.doorIdx)
         GameLoopHandler.boardEmptyForMs = 0
         GameLoopHandler.currentWaveIdx = 0
         GameLoopHandler.currentLevelIdx += 1

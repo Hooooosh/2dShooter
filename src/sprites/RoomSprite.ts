@@ -21,6 +21,13 @@ const BORDER2 = {
   color: 0xaaaaaa,
 }
 
+const _DOOR_POSITIONS = [
+  { x: ROOM_SIZE / 2, y: 0 }, /* top */
+  { x: ROOM_SIZE, y: ROOM_SIZE / 2 }, /* right */
+  { x: 0, y: ROOM_SIZE / 2 }, /* left */
+  { x: ROOM_SIZE / 2, y: ROOM_SIZE }, /* bottom */
+]
+
 
 export const RoomSprite = {
   BANNER_SIZE,
@@ -82,6 +89,9 @@ export const RoomSprite = {
     /* if doors need to be updated */
     if (RoomSprite.displayedDoorCount !== doorContainer.children.length) {
       doorContainer.removeChildren()
+
+      const singleDoorContainer = new Container()
+
       for (let i = 0; i < RoomSprite.displayedDoorCount; i++) {
         const doorLine1 = new Graphics()
         const doorLine2 = new Graphics()
@@ -112,36 +122,52 @@ export const RoomSprite = {
         doorLine2.y = doorLine1.y
         doorLine2.rotation = doorLine1.rotation
 
-        doorLine1.rect(
-          -DOOR_WIDTH / 2,
-          -DOOR_HEIGHT,
-          DOOR_WIDTH,
-          DOOR_HEIGHT
+
+        /* draw bg color mask */
+        const doorMask = new Graphics()
+        doorMask.rotation = doorLine1.rotation
+        doorMask.x = doorLine1.x - Math.sin(doorLine1.rotation) * 10
+        doorMask.y = doorLine1.y + Math.cos(doorLine1.rotation) * 10
+        doorMask.rect(
+          -DOOR_WIDTH / 2 + 1.5,
+          -DOOR_HEIGHT + 1.5,
+          DOOR_WIDTH - 1.5,
+          DOOR_HEIGHT - 1.5
         )
-        doorLine1.stroke({ width: BORDER1.width, color: BORDER1.color })
+        doorMask.fill(0x000000)
 
-        doorLine2.rotation = doorLine1.rotation
 
-        doorLine2.rect(
-          -DOOR_WIDTH / 2 + BORDER_OFFSET,
-          -DOOR_HEIGHT + BORDER_OFFSET,
-          DOOR_WIDTH - BORDER_OFFSET * 2,
-          DOOR_HEIGHT - BORDER_OFFSET
-        )
-        doorLine2.stroke({ width: BORDER2.width, color: BORDER2.color })
 
-        doorContainer.addChild(doorLine1)
-        doorContainer.addChild(doorLine2)
+        /* draw door lines */
+        doorLine1
+          .moveTo(-DOOR_WIDTH / 2, -BORDER_OFFSET)
+          .lineTo(-DOOR_WIDTH / 2, -DOOR_HEIGHT)
+          .lineTo(DOOR_WIDTH / 2, -DOOR_HEIGHT)
+          .lineTo(DOOR_WIDTH / 2, -BORDER_OFFSET)
+        doorLine1.stroke({ width: BORDER2.width, color: BORDER2.color })
+
+        doorLine2
+          .moveTo(-DOOR_WIDTH / 2, 0)
+          .lineTo(-DOOR_WIDTH / 2 + BORDER_OFFSET, 0)
+          .lineTo(-DOOR_WIDTH / 2 + BORDER_OFFSET, -DOOR_HEIGHT + BORDER_OFFSET)
+          .lineTo(DOOR_WIDTH / 2 - BORDER_OFFSET, -DOOR_HEIGHT + BORDER_OFFSET)
+          .lineTo(DOOR_WIDTH / 2 - BORDER_OFFSET, 0)
+          .lineTo(DOOR_WIDTH / 2, 0)
+        doorLine2.stroke({ width: BORDER1.width, color: BORDER1.color })
+
+        singleDoorContainer.addChild(doorMask)
+        singleDoorContainer.addChild(doorLine1)
+        singleDoorContainer.addChild(doorLine2)
+        doorContainer.addChild(singleDoorContainer)
       }
     }
   },
 
-
   _checkDoorCollision() {
     if (!doorContainer) return;
     /* check distances for doors */
-    doorContainer.children.forEach((door, idx) => {
-      if (Distance({ x: Player.x, y: Player.y }, { x: door.x, y: door.y }) < Player.SPRITE_SIZE * 0.7) {
+    for (let idx = 0; idx < RoomSprite.displayedDoorCount; idx++) {
+      if (Distance({ x: Player.x, y: Player.y }, _DOOR_POSITIONS[idx]) < Player.SPRITE_SIZE * 0.7) {
         /* emit enter door event */
         EventHandler.emit(GLOBAL_EVENTS.DOOR_ENTER, { doorIdx: idx })
 
@@ -162,6 +188,6 @@ export const RoomSprite = {
             break;
         }
       }
-    })
+    }
   }
 }
