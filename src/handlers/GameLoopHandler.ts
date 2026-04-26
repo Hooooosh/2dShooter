@@ -66,7 +66,8 @@ export const GameLoopHandler = {
                 }
                 
                 console.log("setting up doors")
-                RoomSprite.displayedDoorCount = GameLoopHandler.globalLevels[GameLoopHandler.currentLevelIdx + 1].variants.length
+                /* RoomSprite.displayedDoorCount = GameLoopHandler.globalLevels[GameLoopHandler.currentLevelIdx + 1].variants.length */
+                RoomSprite.displayedDoorCount = 4
                 EventHandler.emit(GLOBAL_EVENTS.STAGE_CLEAR)
                 BulletHandler.bullets.forEach(b => b.markedForDeletion = true)
             }
