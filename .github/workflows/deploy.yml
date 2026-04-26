@@ -18,8 +18,11 @@ jobs:
         with:
           node-version: 18
 
-      - name: Npm install
-        run: npm install
+      - name: Install deps
+        run: npm ci
+
+      - name: Rebuild native modules
+        run: npm rebuild
 
       - name: Vite build
         run: npm run build
