@@ -6,6 +6,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   root: "./",
 	build: {
+		target: "esnext",
 		outDir: "./dist",
 		emptyOutDir: true,
 		minify: "esbuild",
