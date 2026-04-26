@@ -11,6 +11,7 @@ const BANNER_SIZE = 100
 const ROOM_SIZE = window.innerHeight - BANNER_SIZE * 2
 const DOOR_WIDTH = 80
 const DOOR_HEIGHT = 40
+const BORDER_OFFSET = 10
 const BORDER1 = {
   width: 3,
   color: 0xdddddd,
@@ -18,7 +19,6 @@ const BORDER1 = {
 const BORDER2 = {
   width: 2,
   color: 0xaaaaaa,
-  offset: 20
 }
 
 
@@ -56,7 +56,7 @@ export const RoomSprite = {
 
 
     const border2 = new Graphics()
-    border2.rect(-BORDER2.offset / 2, -BORDER2.offset / 2, ROOM_SIZE + BORDER2.offset, ROOM_SIZE + BORDER2.offset)
+    border2.rect(-BORDER_OFFSET, -BORDER_OFFSET, ROOM_SIZE + BORDER_OFFSET * 2, ROOM_SIZE + BORDER_OFFSET * 2)
     border2.stroke({ width: BORDER2.width, color: BORDER2.color })
 
     roomContainer.addChild(border)
@@ -89,38 +89,45 @@ export const RoomSprite = {
         switch (i) {
           case 0: /* top */
             doorLine1.x = RoomSprite.ROOM_SIZE / 2
-            doorLine1.y = -DOOR_HEIGHT / 2
-            doorLine2.x = doorLine1.x - BORDER2.offset / 2
-            doorLine2.y = doorLine1.y - BORDER2.offset / 2
+            doorLine1.y = 0
             break
           case 1: /* right */
-            doorLine1.x = RoomSprite.ROOM_SIZE + DOOR_HEIGHT / 2
-            doorLine1.y = RoomSprite.ROOM_SIZE / 2
             doorLine1.rotation = Math.PI / 2
-            doorLine2.x = doorLine1.x + BORDER2.offset / 2
-            doorLine2.y = doorLine1.y - BORDER2.offset / 2
+            doorLine1.x = RoomSprite.ROOM_SIZE
+            doorLine1.y = RoomSprite.ROOM_SIZE / 2
             break
           case 2: /* left */
-            doorLine1.x = - DOOR_HEIGHT / 2
+            doorLine1.x = 0
             doorLine1.y = RoomSprite.ROOM_SIZE / 2
-            doorLine1.rotation = Math.PI / 2
-            doorLine2.x = doorLine1.x
-            doorLine2.y = doorLine1.y - BORDER2.offset / 2
+            doorLine1.rotation = -Math.PI / 2
             break
           case 3: /* bottom */
             doorLine1.x = RoomSprite.ROOM_SIZE / 2
-            doorLine1.y = RoomSprite.ROOM_SIZE + DOOR_HEIGHT / 2
-            doorLine2.x = doorLine1.x - BORDER2.offset / 2
-            doorLine2.y = doorLine1.y
+            doorLine1.y = RoomSprite.ROOM_SIZE
+            doorLine1.rotation = Math.PI
             break
         }
 
-        doorLine1.rect(-DOOR_WIDTH / 2, -DOOR_HEIGHT / 2, DOOR_WIDTH, DOOR_HEIGHT)
+        doorLine2.x = doorLine1.x
+        doorLine2.y = doorLine1.y
+        doorLine2.rotation = doorLine1.rotation
+
+        doorLine1.rect(
+          -DOOR_WIDTH / 2,
+          -DOOR_HEIGHT,
+          DOOR_WIDTH,
+          DOOR_HEIGHT
+        )
         doorLine1.stroke({ width: BORDER1.width, color: BORDER1.color })
 
         doorLine2.rotation = doorLine1.rotation
 
-        doorLine2.rect(-DOOR_WIDTH / 2, -DOOR_HEIGHT / 2, DOOR_WIDTH + BORDER2.offset, DOOR_HEIGHT + BORDER2.offset / 2)
+        doorLine2.rect(
+          -DOOR_WIDTH / 2 + BORDER_OFFSET,
+          -DOOR_HEIGHT + BORDER_OFFSET,
+          DOOR_WIDTH - BORDER_OFFSET * 2,
+          DOOR_HEIGHT - BORDER_OFFSET
+        )
         doorLine2.stroke({ width: BORDER2.width, color: BORDER2.color })
 
         doorContainer.addChild(doorLine1)
@@ -134,30 +141,7 @@ export const RoomSprite = {
     if (!doorContainer) return;
     /* check distances for doors */
     doorContainer.children.forEach((door, idx) => {
-      let x = 0
-      let y = 0
-
-      switch (idx) {
-        case 0:
-          x = RoomSprite.ROOM_SIZE / 2
-          y = -DOOR_HEIGHT / 2
-          break;
-        case 1:
-          x = RoomSprite.ROOM_SIZE
-          y = RoomSprite.ROOM_SIZE / 2
-          break;
-        case 2:
-          x = 0
-          y = RoomSprite.ROOM_SIZE / 2
-          break;
-        case 3:
-          x = RoomSprite.ROOM_SIZE / 2
-          y = RoomSprite.ROOM_SIZE
-          break;
-        default:
-          break;
-      }
-      if (Distance({ x: Player.x, y: Player.y }, { x: x, y: y }) < Player.SPRITE_SIZE * 1.1) {
+      if (Distance({ x: Player.x, y: Player.y }, { x: door.x, y: door.y }) < Player.SPRITE_SIZE * 0.7) {
         /* emit enter door event */
         EventHandler.emit(GLOBAL_EVENTS.DOOR_ENTER, { doorIdx: idx })
 
