@@ -61,6 +61,20 @@ export const BulletHandler = {
         BulletHandler.bullets.push(particle)
     },
 
+    fadeOutAll() {
+        BulletHandler.bullets.forEach(b => {
+            if (b.life < b.maxLife) {
+                b.life = b.maxLife
+            }
+        })
+    },
+
+    fadeOut(bullet: IBullet) {
+        if (bullet.life < bullet.maxLife) {
+            bullet.life = bullet.maxLife
+        }
+    },
+
     _update(ticker: PIXI.Ticker) {
         if (!BulletHandler.bullets) return;
 
@@ -81,7 +95,7 @@ export const BulletHandler = {
                 b.x < 0 || b.x > RoomSprite.ROOM_SIZE ||
                 b.y < 0 || b.y > RoomSprite.ROOM_SIZE
             ) {
-                b.life = Math.max(b.maxLife, b.life) /* start despawn if not already */
+                BulletHandler.fadeOut(b) /* start despawn if not already */
             }
 
             /* check player hit */
@@ -96,6 +110,7 @@ export const BulletHandler = {
                 /* hit */
                 if (dx * dx + dy * dy <= r * r) {
                     Player.damage(1)
+                    BulletHandler.fadeOut(b)
                     b.markedForDeletion = true
                 }
             }

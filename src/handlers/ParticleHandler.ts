@@ -175,7 +175,7 @@ export const ParticleHandler = {
         ParticleHandler.damageNumbers.push(num)
     },
 
-    spawnParticleExplosion(x: number, y: number, speed = 3, count = 5, maxAlpha = 0.3, color = 0xffffff) {
+    spawnParticleExplosion(x: number, y: number, speed = 3, count = 5, maxAlpha = 0.3, color = 0xffffff, life = 500) {
         count = count + Math.floor(Math.random() * 5)
         for (let i = 0; i < count; i++) {
             const angle = Math.random() * Math.PI * 2
@@ -184,7 +184,7 @@ export const ParticleHandler = {
             const vy = Math.sin(angle) * initialSpeed
             const radius = Math.random() * 3 + 2
             const sprite = new PIXI.Graphics().circle(0, 0, radius).fill(color)
-            ParticleHandler.spawnParticle(x, y, vx, vy, 500, color, maxAlpha, 0.95, radius, sprite)
+            ParticleHandler.spawnParticle(x, y, vx, vy, life, color, maxAlpha, 0.95, radius, sprite)
         }
     },
 
@@ -199,8 +199,12 @@ export const ParticleHandler = {
             maxAlpha,
             color,
             life: 0,
-            sprite: new PIXI.Graphics().circle(x, y, initialRadius).fill(color)
+            sprite: new PIXI.Graphics().circle(0, 0, initialRadius).fill(color)
         }
+
+        const renderPos = RoomSprite.getRenderPosition(x, y)
+        effect.sprite.x = renderPos.x
+        effect.sprite.y = renderPos.y
 
         genericParticleContainer?.addChild(effect.sprite)
         ParticleHandler.circleExplosions.push(effect)
@@ -330,14 +334,15 @@ export const ParticleHandler = {
             const newRadius = (1 - newRadiusNormal) * e.initialRadius
             const color = e.sprite.strokeStyle.color
 
+            const renderPos = RoomSprite.getRenderPosition(e.enemy.x, e.enemy.y)
+            e.sprite.x = renderPos.x
+            e.sprite.y = renderPos.y
+
             e.sprite.clear()
             e.sprite.circle(0, 0, newRadius)
             e.sprite.alpha = (newRadiusNormal) * 0.4 + 0.4
             e.sprite.stroke({ width: (newRadiusNormal) * 5, color: color })
 
-            const renderPos = RoomSprite.getRenderPosition(e.enemy.x, e.enemy.y)
-            e.sprite.x = renderPos.x
-            e.sprite.y = renderPos.y
 
             e.life += ms
         }
@@ -407,15 +412,15 @@ export const ParticleHandler = {
             const newRadius = (newRadiusNormal) * (c.targetRadius - c.initialRadius) + c.initialRadius
             const newLineWidth = (1 - newRadiusNormal) * c.initialLinewidth
             const newOpacity = (1 - newRadiusNormal) * c.maxAlpha
-
             c.sprite.clear()
-            c.sprite.circle(0, 0, newRadius)
-            c.sprite.alpha = newOpacity
-            c.sprite.stroke({ width: newLineWidth, color: c.color })
-
+            
             const renderPos = RoomSprite.getRenderPosition(c.x, c.y)
             c.sprite.x = renderPos.x
             c.sprite.y = renderPos.y
+
+            c.sprite.circle(0, 0, newRadius)
+            c.sprite.alpha = newOpacity
+            c.sprite.stroke({ width: newLineWidth, color: c.color })
 
             c.life += ms
 

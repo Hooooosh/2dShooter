@@ -62,8 +62,8 @@ export const EnemyHandler = {
 
 
     update(ticker: PIXI.Ticker) {
+        /* remove deleted from scene */
         for (const enemy of EnemyHandler.enemies) {
-            /* remove deleted from scene */
             if (enemy.markedForDeletion) {
                 EnemyHandler.enemies.splice(EnemyHandler.enemies.indexOf(enemy), 1)
                 if (enemy.sprite && enemy.sprite.parent) {
@@ -76,6 +76,7 @@ export const EnemyHandler = {
             }
         }
 
+        /* spawn waiting to spawn enemies */
         EnemyHandler.waitingToSpawn.forEach(waiting => {
             waiting.timeUntilSpawnMs -= ticker.deltaMS
 
@@ -87,7 +88,8 @@ export const EnemyHandler = {
                 const renderPos = RoomSprite.getRenderPosition(waiting.enemy.x, waiting.enemy.y)
                 waiting.enemy.sprite.x = renderPos.x
                 waiting.enemy.sprite.y = renderPos.y
-                ParticleHandler.spawnParticleExplosion(waiting.enemy.x, waiting.enemy.y)
+                ParticleHandler.spawnParticleExplosion(waiting.enemy.x, waiting.enemy.y, undefined, undefined, 0.2)
+                ParticleHandler.spawnCircleExplosion(waiting.enemy.x, waiting.enemy.y, 100, 20, 400, undefined, 0.4)
             }
         })
     }

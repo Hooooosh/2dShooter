@@ -18,7 +18,7 @@ await PIXI.Assets.load([
 
 export const Sword = {
     SWING_COOLDOWN: 400,
-    SWING_DURATION: 100,
+    SWING_DURATION: 150,
     SWING_ANGLE: degToRad(90),
     SWING_BEZIER_CONTROLS: [0.22, 1.13, 0.75, 0.98] as [number, number, number, number],
 
@@ -32,13 +32,13 @@ export const Sword = {
     _init(app: PIXI.Application) {
         sprite = new PIXI.Sprite(PIXI.Assets.get("sword"))
 
-        sprite.anchor.set(0.5, this.SWORD_OFFSET_FROM_PLAYER)
+        sprite.anchor.set(0.5, Sword.SWORD_OFFSET_FROM_PLAYER)
         sprite.x = Player.x
         sprite.y = Player.y
 
         app.stage.addChild(sprite)
 
-        app.ticker.add((ticker) => this._update(ticker, app))
+        app.ticker.add((ticker) => Sword._update(ticker, app))
     },
 
     _remove() {
@@ -55,11 +55,11 @@ export const Sword = {
     },
 
     _attemptAttack() {
-        if (this.currentSwingCooldown >= this.SWING_COOLDOWN && sprite) {
-            this.currentSwingCooldown = 0
-            this.currentSwingSide *= -1
-            this.hasRanHitboxThisSwing = false
-            this.isSwinging = true
+        if (Sword.currentSwingCooldown >= Sword.SWING_COOLDOWN && sprite) {
+            Sword.currentSwingCooldown = 0
+            Sword.currentSwingSide *= -1
+            Sword.hasRanHitboxThisSwing = false
+            Sword.isSwinging = true
         }
     },
 
@@ -74,44 +74,44 @@ export const Sword = {
             mousePos.x - RoomSprite.getRenderPosition(playerPos.x, playerPos.y).x
         ) + Math.PI / 2
 
-        if (this.currentSwingCooldown > this.SWING_DURATION) {
-            this.isSwinging = false
-            sprite.rotation = angleToMouse + this.SWING_ANGLE / 2 * this.currentSwingSide
+        if (Sword.currentSwingCooldown > Sword.SWING_DURATION) {
+            Sword.isSwinging = false
+            sprite.rotation = angleToMouse + Sword.SWING_ANGLE / 2 * Sword.currentSwingSide
         }
 
         /* calculate sword angle */
-        if (this.currentSwingCooldown < this.SWING_COOLDOWN) {
+        if (Sword.currentSwingCooldown < Sword.SWING_COOLDOWN) {
             /* if first frame, snap rotation to mouse to avoid conflicts */
-            if (this.currentSwingCooldown == 0) {
-                sprite.rotation = angleToMouse - this.SWING_ANGLE / 2 * this.currentSwingSide
-                this.lastSwingAngle = sprite.rotation
+            if (Sword.currentSwingCooldown == 0) {
+                sprite.rotation = angleToMouse - Sword.SWING_ANGLE / 2 * Sword.currentSwingSide
+                Sword.lastSwingAngle = sprite.rotation
             }
-            this.currentSwingCooldown += ticker.deltaMS
+            Sword.currentSwingCooldown += ticker.deltaMS
         }
 
-        this.setPosition(playerPos.x, playerPos.y)
+        Sword.setPosition(playerPos.x, playerPos.y)
 
         const oldAngle = sprite.rotation
         let newAngleAfterBezier
 
         /* if swinging, bezier swing angle, else aim at mouse */
-        if (this.isSwinging) {
+        if (Sword.isSwinging) {
             const newAngleNormal = cubicBezierEase(
-                Math.min(this.currentSwingCooldown / this.SWING_DURATION, 1),
-                ...this.SWING_BEZIER_CONTROLS
+                Math.min(Sword.currentSwingCooldown / Sword.SWING_DURATION, 1),
+                ...Sword.SWING_BEZIER_CONTROLS
             )
             /* apply rotation */
-            newAngleAfterBezier = this.lastSwingAngle + newAngleNormal * this.SWING_ANGLE * this.currentSwingSide
+            newAngleAfterBezier = Sword.lastSwingAngle + newAngleNormal * Sword.SWING_ANGLE * Sword.currentSwingSide
             sprite.rotation = newAngleAfterBezier
 
             /* run swing hitbox at .5 */
-            if (!this.hasRanHitboxThisSwing && (newAngleNormal > 0.5 || this.SWING_DURATION < 200)) {
+            if (!Sword.hasRanHitboxThisSwing && (newAngleNormal > 0.5 || Sword.SWING_DURATION < 200)) {
                 const hitboxWidth = 100
                 const hitboxThickness = 50
                 const angleAtHalfProgress = angleToMouse - Math.PI / 2
-                const hitboxX = playerPos.x + Math.cos(angleAtHalfProgress) * this.SWORD_OFFSET_FROM_PLAYER * (sprite.height - hitboxThickness / 3)
-                const hitboxY = playerPos.y + Math.sin(angleAtHalfProgress) * this.SWORD_OFFSET_FROM_PLAYER * (sprite.height - hitboxThickness / 3)
-                this.hasRanHitboxThisSwing = true
+                const hitboxX = playerPos.x + Math.cos(angleAtHalfProgress) * Sword.SWORD_OFFSET_FROM_PLAYER * (sprite.height - hitboxThickness / 3)
+                const hitboxY = playerPos.y + Math.sin(angleAtHalfProgress) * Sword.SWORD_OFFSET_FROM_PLAYER * (sprite.height - hitboxThickness / 3)
+                Sword.hasRanHitboxThisSwing = true
                 HitboxHandler.runHitboxAgainstEnemies(
                     {
                         xCenter: hitboxX,
@@ -137,24 +137,24 @@ export const Sword = {
 
 
         const clampToNormal = (v: number) => Math.max(0, Math.min(1, v))
-        const finalAngleTarget = this.lastSwingAngle + this.SWING_ANGLE * this.currentSwingSide
-        const totalDelta = signedAngleDelta(this.lastSwingAngle, finalAngleTarget)
+        const finalAngleTarget = Sword.lastSwingAngle + Sword.SWING_ANGLE * Sword.currentSwingSide
+        const totalDelta = signedAngleDelta(Sword.lastSwingAngle, finalAngleTarget)
 
         /* spawn particles at sword tip */
-        if (this.isSwinging) {
-            let currentAngleProgress = oldAngle + this.currentSwingSide * degToRad(3);
+        if (Sword.isSwinging) {
+            let currentAngleProgress = oldAngle + Sword.currentSwingSide * degToRad(3);
 
             while (
-                (this.currentSwingSide == 1 && currentAngleProgress < newAngleAfterBezier) ||
-                (this.currentSwingSide == -1 && currentAngleProgress > newAngleAfterBezier)
+                (Sword.currentSwingSide == 1 && currentAngleProgress < newAngleAfterBezier) ||
+                (Sword.currentSwingSide == -1 && currentAngleProgress > newAngleAfterBezier)
             ) {
-                currentAngleProgress += this.currentSwingSide * degToRad(5)
+                currentAngleProgress += Sword.currentSwingSide * degToRad(5)
 
-                const alreadyTraveledDelta = signedAngleDelta(this.lastSwingAngle, currentAngleProgress)
+                const alreadyTraveledDelta = signedAngleDelta(Sword.lastSwingAngle, currentAngleProgress)
                 const currentAngleProgressNormal = clampToNormal(alreadyTraveledDelta / totalDelta)
 
-                const tipX = playerPos.x + Math.cos(currentAngleProgress - Math.PI / 2) * this.SWORD_OFFSET_FROM_PLAYER * sprite.height
-                const tipY = playerPos.y + Math.sin(currentAngleProgress - Math.PI / 2) * this.SWORD_OFFSET_FROM_PLAYER * sprite.height
+                const tipX = playerPos.x + Math.cos(currentAngleProgress - Math.PI / 2) * Sword.SWORD_OFFSET_FROM_PLAYER * sprite.height
+                const tipY = playerPos.y + Math.sin(currentAngleProgress - Math.PI / 2) * Sword.SWORD_OFFSET_FROM_PLAYER * sprite.height
 
                 ParticleHandler.spawnParticle(
                     tipX,

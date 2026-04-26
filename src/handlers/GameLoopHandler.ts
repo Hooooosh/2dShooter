@@ -4,6 +4,7 @@ import { TAnyBehaviorEntry } from "../const/enemyBehaviors"
 import { EnemyHandler } from "./EnemyHandler"
 import { EventHandler, GLOBAL_EVENTS } from "../helpers/eventHandler"
 import { ENEMY_TYPES } from "../const/enemyTypes"
+import { BulletHandler } from "./BulletHandler"
 
 export interface ILevelInputGenericEnemy {
     x?: number,
@@ -67,6 +68,7 @@ export const GameLoopHandler = {
                 console.log("setting up doors")
                 RoomSprite.displayedDoorCount = GameLoopHandler.globalLevels[GameLoopHandler.currentLevelIdx + 1].variants.length
                 EventHandler.emit(GLOBAL_EVENTS.STAGE_CLEAR)
+                BulletHandler.bullets.forEach(b => b.markedForDeletion = true)
             }
             /* if any waves left, run next wave */
             else {

@@ -82,11 +82,11 @@ export class GenericEnemy implements IGenericEnemy {
             /* die */
             this.markedForDeletion = true
             ParticleHandler.spawnParticleExplosion(this.x, this.y, 5, Math.min(50, this.maxHealth * 5) + 5, 0.8)
-            ParticleHandler.spawnCircleExplosion(this.x, this.y, 100, this.sprite.width / 2)
+            ParticleHandler.spawnCircleExplosion(this.x, this.y, 100, this.sprite.width / 2, 1500)
         }
         else {
             /* normal damage particles */
-            ParticleHandler.spawnParticleExplosion(this.x, this.y, undefined, Math.min(15, amount * 2 + 2))
+            ParticleHandler.spawnParticleExplosion(this.x, this.y, undefined, Math.min(15, amount * 2 + 2), 0.4, undefined, 300)
         }
     }
 

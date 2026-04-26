@@ -303,8 +303,8 @@ export const ENEMY_BEHAVIORS = {
             }
 
             /* spawn afterimage if can */
-            config._afterImageTime += ticker.deltaMS
-            if (Math.floor(config._afterImageTime / AFTERIMAGE_INTERVAL) < Math.floor((config._afterImageTime + ticker.deltaMS) / AFTERIMAGE_INTERVAL)) {
+            config._afterImageTime += ticker.deltaTime * ticker.deltaMS
+            if (Math.floor(config._afterImageTime / AFTERIMAGE_INTERVAL) < Math.floor((config._afterImageTime + ticker.deltaTime * ticker.deltaMS) / AFTERIMAGE_INTERVAL)) {
                 ParticleHandler.spawnEnemyAfterImage(enemy, 800, Math.min(0.7, speedSq / 15), false)
             }
         }
