@@ -19,7 +19,7 @@ export const ENEMY_TYPES: Record<TEnemyType, () => ILevelInputGenericEnemy> = {
     [_TYPES.BASIC_SHOOTER]: () => {
         const followDist = Math.random() * 50 + 150
         return {
-            texture: Assets.get("basic_shooter"),
+            texture: Assets.get("basic-shooter"),
             standardPrice: 25,
             health: 5,
             baseSpeed: Math.random() * 0.2 + 1.7,
@@ -55,7 +55,7 @@ export const ENEMY_TYPES: Record<TEnemyType, () => ILevelInputGenericEnemy> = {
     },
     [_TYPES.CIRCLE_TURRET]: () => {
         return {
-            texture: Assets.get("circle_turret"),
+            texture: Assets.get("circle-turret"),
             standardPrice: 40,
             health: 4,
             behaviors: [

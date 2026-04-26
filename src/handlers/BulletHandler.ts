@@ -18,6 +18,8 @@ interface IBullet {
     sprite: PIXI.Graphics
 }
 
+const DESPAWN_TIME = 300
+
 export const BulletHandler = {
     bullets: [] as IBullet[],
 
@@ -69,17 +71,21 @@ export const BulletHandler = {
 
             b.life += ms
 
-            /* check if bullet is out of bounds or out of life */
-            if (
-                (b.life >= b.maxLife) ||
-                b.x < 0 || b.x > RoomSprite.ROOM_SIZE ||
-                b.y < 0 || b.y > RoomSprite.ROOM_SIZE
-            ) {
+            /* check if bullet finished disappear anim */
+            if (b.life >= b.maxLife + DESPAWN_TIME) {
                 b.markedForDeletion = true
             }
 
+            /* check if bullet is oob */
+            if (
+                b.x < 0 || b.x > RoomSprite.ROOM_SIZE ||
+                b.y < 0 || b.y > RoomSprite.ROOM_SIZE
+            ) {
+                b.life = Math.max(b.maxLife, b.life) /* start despawn if not already */
+            }
+
             /* check player hit */
-            if (!Player.isInvulnerable()) {
+            if (b.life < b.maxLife && !Player.isInvulnerable()) {
                 const LENIENCY_FACTOR = 0.9
                 const ppos = { x: Player.x, y: Player.y }
                 const psize = Player.SPRITE_SIZE
@@ -113,9 +119,19 @@ export const BulletHandler = {
 
             const speed = Math.sqrt(b.vx * b.vx + b.vy * b.vy)
             b.sprite.rotation = Math.atan2(b.vy, b.vx)
+
+            /* normal scale */
             const scaleStretch = Math.max(Math.min(1 + speed / 20, 2), 1)
             const scaleSquish = Math.max(1 / scaleStretch, 0.4)
             b.sprite.scale.set(scaleStretch, scaleSquish)
+
+            /* + decaying scale */
+            if (b.life >= b.maxLife) {
+                const decayProgress = Math.min((b.life - b.maxLife) / DESPAWN_TIME, 1)
+                const scale = Math.max(1 - decayProgress, 0)
+                b.sprite.scale.set(scaleStretch * scale, scaleSquish * scale)
+                b.sprite.alpha = Math.max(1 - decayProgress, 0)
+            }
 
             b.vx *= b.dampFactor
             b.vy *= b.dampFactor
