@@ -1,7 +1,6 @@
 import { FastIsPointInCircle } from "../helpers/dist";
 import { EnemyHandler } from "./EnemyHandler";
 import { IGenericEnemy } from "../sprites/EnemySprite"
-import { ParticleHandler } from "./ParticleHandler";
 import { Player } from "../sprites/PlayerSprite";
 
 export interface IHitbox {
@@ -42,8 +41,7 @@ export const HitboxHandler = {
                 if (isHit) {
                     const isCrit = RollCrit()
                     if(isCrit) damage *= 2
-                    e.damage(damage)
-                    ParticleHandler.spawnDamageNumber(e.x, e.y, damage, isCrit)
+                    e.damage(damage, isCrit)
                 }
             }
         }

@@ -5,12 +5,13 @@ import { useEffect, useRef } from "react";
 import { Player } from "./sprites/PlayerSprite";
 import { RoomSprite } from "./sprites/RoomSprite";
 import { ParticleHandler } from "./handlers/ParticleHandler";
-import UiTopbar from "./react-components/ui-top-bar";
+import UiTopBar from "./react-components/ui-top-bar";
 import { BulletHandler } from "./handlers/BulletHandler";
 import { EnemyHandler } from "./handlers/EnemyHandler";
 import DebugCanvas from "./react-components/debug-canvas";
 import { _DebugFunctions } from "./sprites/_DebugFunctions";
 import { GameLoopHandler } from "./handlers/GameLoopHandler";
+import UiLeftBar from "./react-components/ui-left-bar";
 
 extend({
   Container,
@@ -19,7 +20,8 @@ extend({
 export default function App() {
   return (
     <>
-      <UiTopbar />
+      <UiTopBar />
+      <UiLeftBar />
       <DebugCanvas />
 
       <Application resizeTo={window}>

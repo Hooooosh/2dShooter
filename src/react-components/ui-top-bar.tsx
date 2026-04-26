@@ -4,7 +4,7 @@ import { EventHandler, GLOBAL_EVENTS } from "../helpers/eventHandler"
 import { RoomSprite } from "../sprites/RoomSprite"
 
 
-export default function UiTopbar() {
+export default function UiTopBar() {
     const [hp, setHp] = useState(Player.health)
     const [stamina, setStamina] = useState(Player.currentStamina)
 
@@ -56,8 +56,8 @@ export default function UiTopbar() {
             </div>
 
             {/* stamina */}
-            <div className="flex relative w-full justify-end h-full" key={stamina}>
-                <div className="flex absolute w-full h-full justify-end">
+            <div className="flex relative w-full justify-end h-full gap-4" key={stamina}>
+                <div className="flex absolute w-full h-full justify-end gap-[inherit]">
                     {/* empty stamina icons backdrop */}
                     {
                         Array.from({ length: Math.ceil(Player.MAX_STAMINA) }).map((_, i) => (

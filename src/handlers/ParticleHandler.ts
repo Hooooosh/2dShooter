@@ -53,6 +53,15 @@ interface ICricleExplosionEffect {
     sprite: PIXI.Graphics
 }
 
+interface IEnemySpawnIndicatorEffect {
+    x: number,
+    y: number,
+    size: number,
+    life: number,
+    initialLife: number,
+    sprite: PIXI.Graphics
+}
+
 const NEGATIVE_FILTER = new PIXI.ColorMatrixFilter()
 NEGATIVE_FILTER.negative(true)
 
@@ -61,6 +70,7 @@ export const ParticleHandler = {
     enemyShootIndicators: [] as IShootIndicatorEffect[],
     damageNumbers: [] as IDamageNumberEffect[],
     circleExplosions: [] as ICricleExplosionEffect[],
+    enemySpawnIndicators: [] as IEnemySpawnIndicatorEffect[],
 
     _init(app: PIXI.Application) {
         genericParticleContainer = new PIXI.Container()
@@ -101,8 +111,9 @@ export const ParticleHandler = {
             sprite: sprite ?? _fallbackSprite
         }
 
-        particle.sprite.x = x
-        particle.sprite.y = y
+        const renderPos = RoomSprite.getRenderPosition(x, y)
+        particle.sprite.x = renderPos.x
+        particle.sprite.y = renderPos.y
 
         genericParticleContainer?.addChild(particle.sprite)
         ParticleHandler.particles.push(particle)
@@ -180,6 +191,29 @@ export const ParticleHandler = {
         ParticleHandler.circleExplosions.push(effect)
     },
 
+    spawnEnemySpawnIndicator(x: number, y: number, size = 100, life = 750) {
+        const modifiedSize = Math.max(size * 1.2, size + 20)
+        const effect: IEnemySpawnIndicatorEffect = {
+            x,
+            y,
+            size,
+            life: life,
+            initialLife: life,
+            sprite: new PIXI.Graphics()
+                .rect(-size / 2, -size / 2, size, size)
+                .rect(-modifiedSize / 2, -modifiedSize / 2, modifiedSize, modifiedSize)
+                .setStrokeStyle({ width: 10, color: 0xff0000 })
+                .stroke(0xff0000)
+        }
+
+        const renderPos = RoomSprite.getRenderPosition(x, y)
+        effect.sprite.x = renderPos.x
+        effect.sprite.y = renderPos.y
+
+        genericParticleContainer?.addChild(effect.sprite)
+        ParticleHandler.enemySpawnIndicators.push(effect)
+    },
+
     _update(ticker: PIXI.Ticker) {
 
         /* ------------- PARTICLES ------------- */
@@ -229,8 +263,6 @@ export const ParticleHandler = {
 
         /* ------------- ENEMY SHOOT INDICATORS ------------- */
 
-        if (!ParticleHandler.enemyShootIndicators) return;
-
         for (let i = 0; i < ParticleHandler.enemyShootIndicators.length; i++) {
             const e = ParticleHandler.enemyShootIndicators[i]
 
@@ -270,7 +302,6 @@ export const ParticleHandler = {
 
             e.life += ms
         }
-
 
         /* ------------- DAMAGE NUMBERS ------------- */
 
@@ -349,6 +380,53 @@ export const ParticleHandler = {
 
             c.life += ms
 
+        }
+
+
+        /* ------------- ENEMY SPAWN INDICATORS ------------- */
+
+        for (let i = 0; i < ParticleHandler.enemySpawnIndicators.length; i++) {
+            const e = ParticleHandler.enemySpawnIndicators[i]
+            if (e.life <= 0) {
+                genericParticleContainer?.removeChild(e.sprite)
+                ParticleHandler.enemySpawnIndicators.splice(i, 1)
+                i--
+                continue
+            }
+
+            const BLINKS_UNTIL = e.initialLife / 3
+            const BLINK_INTERVAL = 80
+
+            let size = e.size
+
+            if (e.life >= BLINKS_UNTIL) {
+                e.sprite.alpha = Math.floor(e.life / BLINK_INTERVAL) % 2 == 0 ? 0.8 : 0.4
+            }
+            else {
+                e.sprite.alpha = 0.6
+                const BEZIER_CONTROLS = [
+                    0,
+                    .5,
+                    .53,
+                    .92,
+                ] as [number, number, number, number]
+                const newNormal = cubicBezierEase(
+                    Math.max(0, Math.min(1, e.life / (BLINKS_UNTIL))),
+                    ...BEZIER_CONTROLS
+                )
+
+                size = newNormal * e.size
+            }
+
+            const modifiedSize = Math.min(Math.max(size * 0.9, size - 5), size - 15)
+
+            e.sprite.clear()
+            e.sprite.rect(-size / 2, -size / 2, size, size)
+            e.sprite.rect(-modifiedSize / 2, -modifiedSize / 2, modifiedSize, modifiedSize)
+            e.sprite.setStrokeStyle({ width: 3, color: 0xff0000 })
+            e.sprite.stroke()
+
+            e.life -= ms
         }
     },
 }

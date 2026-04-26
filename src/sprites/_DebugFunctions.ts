@@ -1,4 +1,5 @@
 import { ENEMY_BEHAVIORS, TFollowPlayerConfig, TShootPeriodicallyConfig, TAnyBehaviorEntry } from "../const/enemyBehaviors"
+import { BulletHandler } from "../handlers/BulletHandler"
 import { EnemyHandler } from "../handlers/EnemyHandler"
 import { Player } from "./PlayerSprite"
 import { RoomSprite } from "./RoomSprite"
@@ -23,8 +24,16 @@ export const _DebugFunctions = {
                     Player.healTo(Player.MAX_HEALTH)
                     break;
 
+                /* KILL ALL */
                 case "Backquote":
                     EnemyHandler.enemies.forEach(e => e.instakill())
+                    break;
+
+                /* TEST BULLETS */
+                case "KeyQ":
+                    for (let i = 0; i < 20; i++) {
+                        BulletHandler.spawnBullet(50 + i * 20, 50, 0, i * 2, 4000)
+                    }
                     break;
 
                 /* SUMMON 1HP DUMMIES */
@@ -60,16 +69,17 @@ export const _DebugFunctions = {
             Math.random() * RoomSprite.ROOM_SIZE,
             Math.random() * RoomSprite.ROOM_SIZE,
             3,
+            undefined,
             [
-                { behavior: ENEMY_BEHAVIORS.followPlayerBehavior, config: { speed: 2.5, keepDistance: 200 } as TFollowPlayerConfig },
-                { behavior: ENEMY_BEHAVIORS.shootPeriodicallyBehavior, config: { shootPeriod: 2500 } as TShootPeriodicallyConfig },
+                { behavior: ENEMY_BEHAVIORS.followPlayerBehavior, config: { keepDistance: 200 } as TFollowPlayerConfig },
+                { behavior: ENEMY_BEHAVIORS.shootPeriodicallyBehavior, config: { shootInterval: 2500 } as TShootPeriodicallyConfig },
             ] as TAnyBehaviorEntry[],
         )
     },
 
     _summonDummies(invincible = false) {
         function spawn(x: number, y: number) {
-            EnemyHandler.spawnEnemy(x, y, invincible ? 9999999 : 1, [])
+            EnemyHandler.spawnEnemy(x, y, invincible ? 9999999 : 1)
         }
 
         /* evenly across room x */

@@ -1,13 +1,16 @@
-import { Application, Texture, Ticker } from "pixi.js"
+import { Application, Texture } from "pixi.js"
 import { RoomSprite } from "../sprites/RoomSprite"
-import { ENEMY_BEHAVIORS, TAnyBehaviorEntry, TFollowPlayerConfig, TShootPeriodicallyConfig } from "../const/enemyBehaviors"
+import { TAnyBehaviorEntry } from "../const/enemyBehaviors"
 import { EnemyHandler } from "./EnemyHandler"
 import { EventHandler, GLOBAL_EVENTS } from "../helpers/eventHandler"
+import { ENEMY_TYPES } from "../const/enemyTypes"
 
 export interface ILevelInputGenericEnemy {
     x?: number,
     y?: number,
     health?: number,
+    baseSpeed?: number,
+    standardPrice: number,
     maxHealth?: number,
     behaviors?: TAnyBehaviorEntry[],
     hurtboxSize?: number,
@@ -16,7 +19,7 @@ export interface ILevelInputGenericEnemy {
 
 type EnemyWave = ILevelInputGenericEnemy[]
 
-interface ILevelData {
+export interface ILevelData {
     variants: ILevelVariantData[]
 }
 
@@ -29,32 +32,6 @@ interface ILevelVariantData {
     }
 }
 
-export function getEnemyCreditsFromEnemy(enemy: ILevelInputGenericEnemy) {
-    let sum = 0;
-
-    sum += (enemy.health ?? 1) * 3
-
-    if (enemy.behaviors) {
-        const follow = enemy.behaviors.find(e => e.behavior === ENEMY_BEHAVIORS.followPlayerBehavior)
-        const shoot = enemy.behaviors.find(e => e.behavior === ENEMY_BEHAVIORS.shootPeriodicallyBehavior)
-
-        if (follow && (follow.config as TFollowPlayerConfig)) {
-            sum += 10
-            const conf = follow.config as TFollowPlayerConfig
-            sum += conf.speed ? conf.speed * 10 : 0
-            sum += conf.keepDistance ? conf.keepDistance / 100 : 0
-        }
-
-        if (shoot && shoot.config) {
-            sum += 25
-            const conf = shoot.config as TShootPeriodicallyConfig
-            sum += conf.bulletSpeed ? conf.bulletSpeed * 5 : 0
-            sum += conf.shootPeriod ? 2000 / conf.shootPeriod : 0
-        }
-    }
-    return sum
-}
-
 export const LEVEL_COUNT = 4
 
 export const GameLoopHandler = {
@@ -65,7 +42,8 @@ export const GameLoopHandler = {
     boardEmptyForMs: 0,
     spawningNextWave: false,
 
-    _init(app: Application) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _init(_app: Application) {
         if (GameLoopHandler.globalLevels.length == 0) {
             GameLoopHandler._createLevels()
         }
@@ -78,7 +56,7 @@ export const GameLoopHandler = {
 
     _createLevels() {
         /* starting room */
-        GameLoopHandler.globalLevels.push({ variants: [] })
+        GameLoopHandler.globalLevels.push({ variants: [{ enemyWaves: [] }] })
 
         /* tutorial room one choice */
         GameLoopHandler.globalLevels.push({
@@ -91,27 +69,18 @@ export const GameLoopHandler = {
                     },
                     enemyWaves: [
                         [
-                            {
-                                x: RoomSprite.ROOM_SIZE / 2,
-                                y: RoomSprite.ROOM_SIZE / 2,
-                                health: 5,
-                                behaviors: [
-                                    { behavior: ENEMY_BEHAVIORS.followPlayerBehavior },
-                                    { behavior: ENEMY_BEHAVIORS.shootPeriodicallyBehavior }
-                                ] as TAnyBehaviorEntry[]
-                            }
+                            (()=>{
+                                const shooter = ENEMY_TYPES.BASIC_SHOOTER()
+                                return {
+                                    ...shooter,
+                                    x: RoomSprite.ROOM_SIZE / 2,
+                                    y: RoomSprite.ROOM_SIZE / 2,
+                                }
+                            })()
                         ],
                         [
                             ...Array.from({ length: 3 }).map(() => (
-                                {
-                                    x: Math.random() * RoomSprite.ROOM_SIZE,
-                                    y: Math.random() * RoomSprite.ROOM_SIZE,
-                                    health: 3,
-                                    behaviors: [
-                                        { behavior: ENEMY_BEHAVIORS.followPlayerBehavior },
-                                        { behavior: ENEMY_BEHAVIORS.shootPeriodicallyBehavior }
-                                    ] as TAnyBehaviorEntry[]
-                                }
+                                ENEMY_TYPES.BASIC_SHOOTER()
                             ))
                         ]
                     ]
@@ -129,7 +98,7 @@ export const GameLoopHandler = {
             /* ONE LEVEL */
             for (let j = 0; j < chosenLevelVariationCount; j++) {
                 /* generate one variation */
-                const enemyCreditsForStage = 30 + i * 20 + Math.random() * 20
+                const enemyCreditsForStage = 300 + i * 125 + Math.random() * 200
                 const currentLevelVariationData: ILevelVariantData = {
                     enemyWaves: []
                 }
@@ -139,25 +108,20 @@ export const GameLoopHandler = {
                 const allEnemiesOnStage = [] as ILevelInputGenericEnemy[]
                 let currentCredits = 0
                 while (currentCredits < enemyCreditsForStage) {
-                    const enemy = {
-                        health: Math.floor(Math.random() * 5) + 1,
-                        behaviors: [] as TAnyBehaviorEntry[]
-                    } as ILevelInputGenericEnemy
+                    /* if cant spawn any within credits, stop */
+                    if(Object.values(ENEMY_TYPES).filter(e=>e().standardPrice + currentCredits <= enemyCreditsForStage).length == 0) break
 
-                    /* random behaviors */
-                    if (Math.random() < 0.8) {
-                        enemy.behaviors?.push({ behavior: ENEMY_BEHAVIORS.shootPeriodicallyBehavior } as TAnyBehaviorEntry)
-                        if (Math.random() < 0.7) {
-                            enemy.behaviors?.push({ behavior: ENEMY_BEHAVIORS.followPlayerBehavior } as TAnyBehaviorEntry)
-                        }
-                    }
+                    const chosenEnemy = Object.values(ENEMY_TYPES)[Math.floor(Math.random() * Object.keys(ENEMY_TYPES).length)]() as ILevelInputGenericEnemy
+
+                    /* roll until enemy small enough found */
+                    if(chosenEnemy.standardPrice + currentCredits > enemyCreditsForStage) continue
 
                     /* calc credits */
-                    currentCredits += getEnemyCreditsFromEnemy(enemy)
-                    allEnemiesOnStage.push(enemy)
+                    currentCredits += chosenEnemy.standardPrice
+                    allEnemiesOnStage.push(chosenEnemy)
                 }
 
-                const finalCreditSum = allEnemiesOnStage.reduce((sum, e) => sum + getEnemyCreditsFromEnemy(e), 0)
+                const finalCreditSum = allEnemiesOnStage.reduce((sum, e) => sum + e.standardPrice, 0)
 
                 /* assign waves */
                 let stageWaveCount;
@@ -189,8 +153,6 @@ export const GameLoopHandler = {
                 variants: currentLevelStageVariations
             })
 
-            console.log(currentLevelStageVariations)
-
             /* one level done */
         }
         /* run until all levels with variation combos done */
@@ -204,6 +166,7 @@ export const GameLoopHandler = {
         GameLoopHandler.currentLevelIdx += 1
         GameLoopHandler.currentVariationIdx = payload.doorIdx
         RoomSprite.displayedDoorCount = 0
+        EventHandler.emit(GLOBAL_EVENTS.UPDATE_STAGE_INFO_UI)
 
         if (GameLoopHandler.currentLevelIdx + 1 >= GameLoopHandler.globalLevels.length) {
             console.log("all stages clear")
@@ -217,13 +180,13 @@ export const GameLoopHandler = {
     _runNextWave() {
         GameLoopHandler.currentWaveIdx += 1
         GameLoopHandler._runCurrentWave()
+        EventHandler.emit(GLOBAL_EVENTS.UPDATE_STAGE_INFO_UI)
     },
 
     _runCurrentWave() {
         const currentLevel = GameLoopHandler.globalLevels[GameLoopHandler.currentLevelIdx]
         const currentVariation = currentLevel.variants[GameLoopHandler.currentVariationIdx] ?? { enemyWaves: [] }
         console.log("running current wave")
-
         if (
             currentVariation.enemyWaves == undefined ||
             currentVariation.enemyWaves.length == 0 ||
@@ -247,18 +210,24 @@ export const GameLoopHandler = {
                 enemy.x,
                 enemy.y,
                 enemy.health,
+                enemy.texture,
                 enemy.behaviors,
+                enemy.baseSpeed,
                 enemy.maxHealth,
                 enemy.hurtboxSize,
-                enemy.texture
             )
         })
+
+        EventHandler.emit(GLOBAL_EVENTS.UPDATE_STAGE_INFO_UI)
     },
 
     _runCurrentWaveSpawnTimer() {
         if (EnemyHandler.enemies.filter(e => !e.markedForDeletion).length == 0 && !GameLoopHandler.spawningNextWave) {
             console.log("running current wave...")
             GameLoopHandler.spawningNextWave = true
+
+            EventHandler.emit(GLOBAL_EVENTS.UPDATE_STAGE_INFO_UI)
+
             setTimeout(() => {
                 GameLoopHandler._runCurrentWave()
                 GameLoopHandler.spawningNextWave = false
@@ -270,6 +239,9 @@ export const GameLoopHandler = {
         if (EnemyHandler.enemies.filter(e => !e.markedForDeletion).length == 0 && !GameLoopHandler.spawningNextWave) {
             console.log("running next wave...")
             GameLoopHandler.spawningNextWave = true
+
+            EventHandler.emit(GLOBAL_EVENTS.UPDATE_STAGE_INFO_UI)
+
             setTimeout(() => {
                 GameLoopHandler._runNextWave()
                 GameLoopHandler.spawningNextWave = false
@@ -277,7 +249,7 @@ export const GameLoopHandler = {
         }
     },
 
-    _update(ticker: Ticker) {
+    _update(/* ticker: Ticker */) {
         if (!GameLoopHandler.globalLevels || GameLoopHandler.globalLevels.length == 0) return;
 
         console.log(GameLoopHandler.currentLevelIdx, GameLoopHandler.currentWaveIdx)

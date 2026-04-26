@@ -27,14 +27,6 @@ export const BulletHandler = {
 
         app.stage.addChild(bulletContainer)
         app.ticker.add(this._update)
-
-
-        /* test */
-        window.addEventListener("keydown", (e) => {
-            if (e.code === "KeyQ" && !e.repeat) {
-                BulletHandler.spawnBullet(Player.x, Player.y - 200, 0, 5, 5000, 0.98)
-            }
-        })
     },
 
     spawnBullet(x: number, y: number, vx?: number, vy?: number, maxLife?: number, dampFactor?: number, radius?: number, sprite?: PIXI.Graphics) {
@@ -118,6 +110,12 @@ export const BulletHandler = {
             /* physics */
             b.x += b.vx
             b.y += b.vy
+
+            const speed = Math.sqrt(b.vx * b.vx + b.vy * b.vy)
+            b.sprite.rotation = Math.atan2(b.vy, b.vx)
+            const scaleStretch = Math.max(Math.min(1 + speed / 20, 2), 1)
+            const scaleSquish = Math.max(1 / scaleStretch, 0.4)
+            b.sprite.scale.set(scaleStretch, scaleSquish)
 
             b.vx *= b.dampFactor
             b.vy *= b.dampFactor

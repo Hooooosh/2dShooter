@@ -16,14 +16,16 @@ export interface IGenericEnemy {
     x: number
     y: number
     health: number
+    baseSpeed: number
     maxHealth: number
+    aliveFor: number
     hurtboxSize: number
     markedForDeletion: boolean
 
     sprite: PIXI.Sprite | undefined
     behaviors: TAnyBehaviorEntry[]
     _update(ticker: PIXI.Ticker): void
-    damage(amount?: number): void
+    damage(amount?: number, wasCrit?: boolean): void
     isInvulnerable(): boolean
     instakill(): void
 }
@@ -32,6 +34,8 @@ export class GenericEnemy implements IGenericEnemy {
     x = 0;
     y = 0;
     health = 1;
+    baseSpeed = 3;
+    aliveFor = 0;
     maxHealth = 1;
     hurtboxSize = 0;
     currentIframesMs = 0;
@@ -40,11 +44,13 @@ export class GenericEnemy implements IGenericEnemy {
     sprite = new PIXI.Sprite();
     behaviors = [] as TAnyBehaviorEntry[];
 
-    constructor(x: number, y: number, maxHealth?: number, health?: number, texture?: PIXI.Texture, behaviors?: TAnyBehaviorEntry[], hurtboxSize?: number) {
+    constructor(x: number, y: number, health?: number, texture?: PIXI.Texture, behaviors?: TAnyBehaviorEntry[], baseSpeed?: number, maxHealth?: number, hurtboxSize?: number) {
         this.x = x;
         this.y = y;
         this.health = health ?? maxHealth ?? 1;
         this.maxHealth = maxHealth ?? 1;
+        this.baseSpeed = baseSpeed ?? 3;
+        this.aliveFor = 0;
         this.sprite = new PIXI.Sprite(texture ?? PIXI.Assets.get("enemy-placeholder"))
         this.hurtboxSize = hurtboxSize ?? this.sprite.width;
 
@@ -55,21 +61,18 @@ export class GenericEnemy implements IGenericEnemy {
         this.behaviors = behaviors ?? []
 
         console.log("created enemy")
-
-        /* explosion when enemy spawns */
-        ParticleHandler.spawnParticleExplosion(x, y)
     }
 
     isInvulnerable() {
         return this.currentIframesMs > 0
     }
 
-    damage(amount?: number) {
+    damage(amount = 1, wasCrit = false) {
         if (this.isInvulnerable()) return
 
-        amount ??= 1
-
         this.health -= amount
+
+        ParticleHandler.spawnDamageNumber(this.x, this.y, amount, wasCrit)
 
         if (this.health <= 0) {
             /* die */
@@ -90,6 +93,8 @@ export class GenericEnemy implements IGenericEnemy {
     _update(ticker: PIXI.Ticker) {
         if (!this.sprite || this.markedForDeletion) return
 
+        /* update alivetime */
+        this.aliveFor += ticker.deltaMS
 
         const pos = { x: this.x, y: this.y }
 

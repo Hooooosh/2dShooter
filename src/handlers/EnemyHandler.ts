@@ -4,12 +4,19 @@ import { TAnyBehaviorEntry } from "../const/enemyBehaviors"
 import { DRAW_ORDERS } from "../const/drawOrders"
 import { RoomSprite } from "../sprites/RoomSprite"
 import { EventHandler, GLOBAL_EVENTS } from "../helpers/eventHandler"
+import { ParticleHandler } from "./ParticleHandler"
+import getSpritePosClampedToBounds from "../helpers/getSpritePosClampedToBounds"
 
 let enemyContainer: PIXI.Container | null = null
 
+interface IWaitingToSpawnEnemy {
+    enemy: IGenericEnemy,
+    timeUntilSpawnMs: number
+}
+
 export const EnemyHandler = {
     enemies: [] as IGenericEnemy[],
-    appRef: null as PIXI.Application | null,
+    waitingToSpawn: [] as IWaitingToSpawnEnemy[],
 
     _init(app: PIXI.Application) {
         enemyContainer = new PIXI.Container()
@@ -17,25 +24,36 @@ export const EnemyHandler = {
 
         app.stage.addChild(enemyContainer)
         app.ticker.add(this.update)
-
-        this.appRef = app
     },
 
-    spawnEnemy(x?: number, y?: number, health?: number, behaviors?: TAnyBehaviorEntry[], maxHealth?: number, hurtboxSize?: number, texture?: PIXI.Texture) {
+    spawnEnemy(
+        x?: number,
+        y?: number,
+        health?: number,
+        texture?: PIXI.Texture,
+        behaviors?: TAnyBehaviorEntry[],
+        baseSpeed?: number,
+        maxHealth?: number,
+        hurtboxSize?: number,
+    ) {
         const enemy = new GenericEnemy(
             x ?? Math.random() * RoomSprite.ROOM_SIZE,
             y ?? Math.random() * RoomSprite.ROOM_SIZE,
-            maxHealth,
             health = health ?? maxHealth,
             texture ?? PIXI.Assets.get("enemy-placeholder"),
-            behaviors,
+            behaviors = behaviors?.map((e) => ({ behavior: e.behavior, config: e.config ?? {} })),
+            baseSpeed,
+            maxHealth,
             hurtboxSize
         )
-
-        if (EnemyHandler.appRef) {
-            EnemyHandler.appRef.stage.addChild(enemy.sprite)
-            EnemyHandler.enemies.push(enemy)
-        }
+        const SPAWN_TIMER = Math.random() * 500 + 800
+        
+        const clamped = getSpritePosClampedToBounds({x: enemy.x, y: enemy.y}, enemy.sprite.width)
+        enemy.x = clamped.x
+        enemy.y = clamped.y
+        
+        ParticleHandler.spawnEnemySpawnIndicator(enemy.x, enemy.y, enemy.sprite.width + 20, SPAWN_TIMER)
+        EnemyHandler.waitingToSpawn.push({ enemy, timeUntilSpawnMs: SPAWN_TIMER })
 
         return enemy
     },
@@ -43,7 +61,6 @@ export const EnemyHandler = {
 
     update(ticker: PIXI.Ticker) {
         for (const enemy of EnemyHandler.enemies) {
-            
             /* remove deleted from scene */
             if (enemy.markedForDeletion) {
                 EventHandler.emit(GLOBAL_EVENTS.ENEMY_DIE)
@@ -52,9 +69,24 @@ export const EnemyHandler = {
                     enemy.sprite.parent.removeChild(enemy.sprite)
                 }
             }
-            else{
+            else {
                 enemy._update(ticker)
             }
         }
+
+        EnemyHandler.waitingToSpawn.forEach(waiting => {
+            waiting.timeUntilSpawnMs -= ticker.deltaMS
+
+            if (waiting.timeUntilSpawnMs <= 0 && enemyContainer && waiting.enemy.sprite) {
+                EnemyHandler.enemies.push(waiting.enemy)
+                enemyContainer.addChild(waiting.enemy.sprite)
+                EnemyHandler.waitingToSpawn.splice(EnemyHandler.waitingToSpawn.indexOf(waiting), 1)
+
+                const renderPos = RoomSprite.getRenderPosition(waiting.enemy.x, waiting.enemy.y)
+                waiting.enemy.sprite.x = renderPos.x
+                waiting.enemy.sprite.y = renderPos.y
+                ParticleHandler.spawnParticleExplosion(waiting.enemy.x, waiting.enemy.y)
+            }
+        })
     }
 }

@@ -112,6 +112,23 @@ export const RoomSprite = {
             if (Distance({ x: Player.x, y: Player.y }, { x: door.x, y: door.y }) < Player.SPRITE_SIZE) {
                 /* emit enter door event */
                 EventHandler.emit(GLOBAL_EVENTS.DOOR_ENTER, { doorIdx: idx })
+
+                switch (idx) {
+                    case 0: /* top */
+                        Player.y = RoomSprite.ROOM_SIZE
+                        break
+                    case 1: /* right */
+                        Player.x = 0
+                        break
+                    case 2: /* left */
+                        Player.x = RoomSprite.ROOM_SIZE
+                        break
+                    case 3: /* bottom */
+                        Player.y = 0
+                        break
+                    default:
+                        break;
+                }
             }
         })
     }
