@@ -5,6 +5,7 @@ import { RoomSprite } from "./RoomSprite";
 import { ParticleHandler } from "../handlers/ParticleHandler";
 import { EnemyHandler } from "../handlers/EnemyHandler";
 import { Player } from "./PlayerSprite";
+import { SFX } from "../helpers/soundLoader";
 
 await PIXI.Assets.load([
     {
@@ -76,10 +77,17 @@ export class GenericEnemy implements IGenericEnemy {
 
         this.health -= amount
 
+        SFX.play("enemyHit", { volume: 0.2, speed: Math.random() * 0.5 + 0.75 })
+
         ParticleHandler.spawnDamageNumber(this.x, this.y, amount, wasCrit)
 
         if (this.health <= 0) {
             /* die */
+            if (Math.random() < 0.5)
+                SFX.play("enemyDie1", { volume: 0.2, speed: Math.random() * 0.5 + 0.75 })
+            else
+                SFX.play("enemyDie2", { volume: 0.2, speed: Math.random() * 0.5 + 0.75 })
+            
             this.markedForDeletion = true
             ParticleHandler.spawnParticleExplosion(this.x, this.y, 5, Math.min(50, this.maxHealth * 5) + 5, 0.8)
             ParticleHandler.spawnCircleExplosion(this.x, this.y, 100, this.sprite.width / 2, 1500)

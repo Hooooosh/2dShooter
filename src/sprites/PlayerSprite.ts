@@ -10,6 +10,7 @@ import getSpritePosClampedToBounds from "../helpers/getSpritePosClampedToBounds"
 import { normalizeVector } from "../helpers/vector"
 import { ParticleHandler } from "../handlers/ParticleHandler"
 import { DRAW_ORDERS } from "../const/drawOrders"
+import { SFX } from "../helpers/soundLoader"
 
 let sprite: PIXI.Sprite | null = null
 
@@ -147,6 +148,8 @@ export const Player: IPlayer = {
         Player.currentIframesMs = Player.HURT_IFRAMES
         EventHandler.emit(GLOBAL_EVENTS.HEALTH_CHANGED)
 
+        SFX.play("playerHit", { speed: Math.random() * 0.3 + 0.85 })
+
         /* player damage particles */
         ParticleHandler.spawnParticleExplosion(this.x, this.y, 4, amount * 5 + 10, 0.7, 0xff0000)
     },
@@ -171,6 +174,7 @@ export const Player: IPlayer = {
         if (Player.msSinceLastDash < Player.DASH_DURATION) return
         if (Player.currentStamina < 1) return
         if (Player.lastMoveVector.x === 0 && Player.lastMoveVector.y === 0) return
+        SFX.play("playerDash", { volume: 0.3, speed: Math.random() * 0.5 + 0.75 })
         Player.lastDashedFrom = { x: Player.x, y: Player.y }
         Player.lastDashVector = normalizeVector(vector)
         Player.msSinceLastDash = 0

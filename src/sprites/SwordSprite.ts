@@ -6,6 +6,8 @@ import { degToRad, signedAngleDelta } from "../helpers/angle"
 import { RoomSprite } from "./RoomSprite"
 import { HitboxHandler } from "../handlers/HitboxHandler"
 import { EventHandler, GLOBAL_EVENTS } from "../helpers/eventHandler"
+import { DRAW_ORDERS } from "../const/drawOrders"
+import { SFX } from "../helpers/soundLoader"
 
 let sprite: PIXI.Sprite | null = null
 
@@ -18,9 +20,9 @@ await PIXI.Assets.load([
 
 export const Sword = {
     SWING_COOLDOWN: 400,
-    SWING_DURATION: 150,
-    SWING_ANGLE: degToRad(90),
-    SWING_BEZIER_CONTROLS: [0.22, 1.13, 0.75, 0.98] as [number, number, number, number],
+    SWING_DURATION: 400,
+    SWING_ANGLE: degToRad(120),
+    SWING_BEZIER_CONTROLS: [.11,1.05,.54,1.9] as [number, number, number, number],
 
     currentSwingSide: 1,
     currentSwingCooldown: 0,
@@ -35,6 +37,7 @@ export const Sword = {
         sprite.anchor.set(0.5, Sword.SWORD_OFFSET_FROM_PLAYER)
         sprite.x = Player.x
         sprite.y = Player.y
+        sprite.zIndex = DRAW_ORDERS.PLAYER
 
         app.stage.addChild(sprite)
 
@@ -60,6 +63,7 @@ export const Sword = {
             Sword.currentSwingSide *= -1
             Sword.hasRanHitboxThisSwing = false
             Sword.isSwinging = true
+            SFX.play("swordSwing", { volume: 0.2, speed: Math.random() * 0.5 + 0.75 })
         }
     },
 
@@ -96,6 +100,7 @@ export const Sword = {
 
         /* if swinging, bezier swing angle, else aim at mouse */
         if (Sword.isSwinging) {
+            /* ease */
             const newAngleNormal = cubicBezierEase(
                 Math.min(Sword.currentSwingCooldown / Sword.SWING_DURATION, 1),
                 ...Sword.SWING_BEZIER_CONTROLS

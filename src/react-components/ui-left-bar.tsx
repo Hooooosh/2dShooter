@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ROOM_SIZE, RoomSprite } from "../sprites/RoomSprite";
-import { LevelLoopHandler, ILevelData } from "../handlers/LevelLoopHandler";
+import { GameStateHandler, ILevelData } from "../handlers/GameStateHandler";
 import { EventHandler, GLOBAL_EVENTS } from "../helpers/eventHandler";
 
 
@@ -8,24 +8,24 @@ import { EventHandler, GLOBAL_EVENTS } from "../helpers/eventHandler";
 export default function UiLeftBar() {
     const [globalLevels, setGlobalLevels] = useState<ILevelData[]>();
     const [displayData, setDisplayData] = useState({
-        currentLevelIdx: LevelLoopHandler.currentLevelIdx,
-        currentWaveIdx: LevelLoopHandler.currentWaveIdx,
+        currentLevelIdx: GameStateHandler.currentLevelIdx,
+        currentWaveIdx: GameStateHandler.currentWaveIdx,
     })
 
     const wavesThisLevel = useMemo(() => {
         if (!globalLevels || globalLevels.length == 0) return 0;
         const currentLevel = globalLevels[displayData.currentLevelIdx]
         if (!currentLevel) return 0;
-        return currentLevel.variants[LevelLoopHandler.currentVariationIdx].enemyWaves!.length ?? 0
+        return currentLevel.variants[GameStateHandler.currentVariationIdx].enemyWaves!.length ?? 0
     }, [globalLevels, displayData.currentLevelIdx])
 
     useEffect(() => {
         EventHandler.on(GLOBAL_EVENTS.UPDATE_STAGE_INFO_UI, () => {
             setDisplayData({
-                currentLevelIdx: LevelLoopHandler.currentLevelIdx,
-                currentWaveIdx: LevelLoopHandler.currentWaveIdx,
+                currentLevelIdx: GameStateHandler.currentLevelIdx,
+                currentWaveIdx: GameStateHandler.currentWaveIdx,
             })
-            setGlobalLevels(LevelLoopHandler.globalLevels)
+            setGlobalLevels(GameStateHandler.globalLevels)
         })
     }, [])
 

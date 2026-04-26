@@ -48,7 +48,7 @@ export const EnemyHandler = {
             maxHealth,
             hurtboxSize
         )
-        const SPAWN_TIMER = 1000
+        const SPAWN_TIMER = 1100
         
         const clamped = getSpritePosClampedToBounds({x: enemy.x, y: enemy.y}, enemy.sprite.width)
         enemy.x = clamped.x
@@ -90,6 +90,7 @@ export const EnemyHandler = {
                 waiting.enemy.sprite.y = renderPos.y
                 ParticleHandler.spawnParticleExplosion(waiting.enemy.x, waiting.enemy.y, undefined, undefined, 0.2)
                 ParticleHandler.spawnCircleExplosion(waiting.enemy.x, waiting.enemy.y, 100, 20, 400, undefined, 0.4)
+
             }
         })
     }

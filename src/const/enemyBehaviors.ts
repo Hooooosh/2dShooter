@@ -5,6 +5,7 @@ import { ParticleHandler } from "../handlers/ParticleHandler";
 import { Player } from "../sprites/PlayerSprite";
 import { degToRad, radToDeg } from "../helpers/angle";
 import { ROOM_SIZE } from "../sprites/RoomSprite";
+import { SFX } from "../helpers/soundLoader";
 
 export type TEnemyBehavior<TBehaviorConfig> = (
     enemy: IGenericEnemy,
@@ -34,7 +35,8 @@ export type TShootBurstTowardPlayeConfig = {
     bulletSpeed?: number,
     bulletSpread?: number,
     bulletCount?: number,
-    bulletDecay?: number
+    bulletDecay?: number,
+    shootInCircle?: boolean
 }
 
 export type TKamikazeBehavior = {
@@ -143,6 +145,7 @@ export const ENEMY_BEHAVIORS = {
         config.bulletCount ??= 5
         config._currentTime ??= 0
         config._currentTime += ticker.deltaMS
+        const BURST_DURATION = 300
 
         if (config._canPlayWarning == undefined) config._canPlayWarning = true
 
@@ -159,7 +162,6 @@ export const ENEMY_BEHAVIORS = {
             const playerPos = { x: Player.x, y: Player.y }
             const angleToPlayer = Math.atan2(playerPos.y - enemy.y, playerPos.x - enemy.x)
             const spreadRad = degToRad(config.bulletSpread)
-            const startAngle = angleToPlayer - spreadRad / 2
             /* if only one bullet, shoot normally */
             if (config.bulletCount == 1) {
                 BulletHandler.spawnBullet(
@@ -173,27 +175,38 @@ export const ENEMY_BEHAVIORS = {
             }
             /* else, shotgun */
             else {
+                const midAngle = angleToPlayer
                 for (let i = 0; i < config.bulletCount; i++) {
-                    const headingAngle = startAngle + (i * spreadRad / (config.bulletCount - 1))
-                    BulletHandler.spawnBullet(
-                        enemy.x,
-                        enemy.y,
-                        Math.cos(headingAngle) * config.bulletSpeed,
-                        Math.sin(headingAngle) * config.bulletSpeed,
-                        undefined,
-                        config.bulletDecay
-                    )
-                    ParticleHandler.spawnParticle(
-                        enemy.x, 
-                        enemy.y, 
-                        Math.cos(headingAngle + Math.PI) * (config.bulletSpeed) * (Math.random() * 0.4 + 0.6) * 5, 
-                        Math.sin(headingAngle + Math.PI) * (config.bulletSpeed) * (Math.random() * 0.4 + 0.6) * 5,
-                        300,
-                        0xffaaaa,
-                        0.4,
-                        0.90,
-                        3 + Math.random() * 3
-                    )
+                    let headingAngle = 0
+                    if (config.shootInCircle) {
+                        headingAngle = (Math.PI * 2 / config.bulletCount) * i
+                    }
+                    else {
+                        const side = i % 2 == 0 ? 1 : -1
+                        headingAngle = midAngle + side * Math.ceil(i / 2) * (spreadRad / (config.bulletCount - 1))
+                    }
+                    setTimeout(() => {
+                        BulletHandler.spawnBullet(
+                            enemy.x,
+                            enemy.y,
+                            Math.cos(headingAngle) * config.bulletSpeed!,
+                            Math.sin(headingAngle) * config.bulletSpeed!,
+                            undefined,
+                            config.bulletDecay
+                        )
+                        ParticleHandler.spawnParticle(
+                            enemy.x,
+                            enemy.y,
+                            Math.cos(headingAngle + Math.PI) * config.bulletSpeed! * (Math.random() * 0.4 + 0.6) * 5,
+                            Math.sin(headingAngle + Math.PI) * config.bulletSpeed! * (Math.random() * 0.4 + 0.6) * 5,
+                            300,
+                            0xffaaaa,
+                            0.4,
+                            0.90,
+                            3 + Math.random() * 3
+                        )
+                    }, i * BURST_DURATION / config.bulletCount)
+
                 }
             }
             config._canPlayWarning = true
@@ -325,6 +338,9 @@ export const ENEMY_BEHAVIORS = {
             config._vx = Math.cos(angleToPlayer) * newDashSpeed
             config._vy = Math.sin(angleToPlayer) * newDashSpeed
             config._canPlayWarning = true
+
+            /* sfx */
+            SFX.play("enemyDash", { volume: 0.1, speed: Math.random() * 0.4 + 1.5 })
         }
 
         /* bounce off walls */
@@ -382,9 +398,9 @@ export const GET_ENEMY_BEHAVIOR = {
         behavior: ENEMY_BEHAVIORS.shootPeriodicallyBehavior,
         config: { shootInterval: shootInterval, bulletSpeed } as TShootPeriodicallyConfig
     } as TAnyBehaviorEntry),
-    shootBurstTowardPlayer: (shootInterval: number, bulletSpeed: number, bulletSpread: number, bulletCount: number, bulletDecay?: number) => ({
+    shootBurstTowardPlayer: (shootInterval: number, bulletSpeed: number, bulletSpread: number, bulletCount: number, bulletDecay?: number, shootInCircle?: boolean) => ({
         behavior: ENEMY_BEHAVIORS.shootBurstTowardPlayer,
-        config: { shootInterval, bulletSpeed, bulletSpread, bulletCount, bulletDecay }
+        config: { shootInterval, bulletSpeed, bulletSpread, bulletCount, bulletDecay, shootInCircle }
     } as TAnyBehaviorEntry),
     kamikazeBehavior: (acceleration?: number) => ({
         behavior: ENEMY_BEHAVIORS.kamikazeBehavior,

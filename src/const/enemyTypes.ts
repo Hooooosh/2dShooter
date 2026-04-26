@@ -1,13 +1,13 @@
 import { Assets } from "pixi.js"
 import { GET_ENEMY_BEHAVIOR } from "./enemyBehaviors"
-import { ILevelInputGenericEnemy } from "../handlers/LevelLoopHandler"
+import { ILevelInputGenericEnemy } from "../handlers/GameStateHandler"
 
 
 const _TYPES = {
     BASIC_SHOOTER: "BASIC_SHOOTER",
     TURRET_FAST: "TURRET_FAST",
     SNIPER: "SNIPER",
-    CIRCLE_TURRET: "CIRCLE_TURRET",
+    TURRET_CIRCLE: "TURRET_CIRCLE",
     SHOTGUN: "SHOTGUN", 
     KAMIKAZE: "KAMIKAZE",
     DASH: "DASH",
@@ -86,13 +86,13 @@ export const ENEMY_TYPES: Record<TEnemyType, () => ILevelInputGenericEnemy> = {
             ]
         }
     },
-    [_TYPES.CIRCLE_TURRET]: () => {
+    [_TYPES.TURRET_CIRCLE]: () => {
         return {
             texture: Assets.get("circle-turret"),
             standardPrice: 40,
             health: 3,
             behaviors: [
-                GET_ENEMY_BEHAVIOR.shootBurstTowardPlayer(3000, 3, 360, 16, 0.98),
+                GET_ENEMY_BEHAVIOR.shootBurstTowardPlayer(3000, 3, 360, 16, 0.98, true),
             ],
             hurtsPlayerOnCollision: false,
         }

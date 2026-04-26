@@ -4,6 +4,7 @@ import { Distance } from "../helpers/dist"
 import { Player } from "./PlayerSprite"
 import { EventHandler, GLOBAL_EVENTS } from "../helpers/eventHandler"
 import { DoorSprite } from "./DoorSprite"
+import { SFX } from "../helpers/soundLoader"
 
 let borderContainer: Container | null = null
 
@@ -36,6 +37,8 @@ export const RoomSprite = {
   },
   doors: [] as DoorSprite[],
   openDoorsCount: 0,
+  enterDoorCooldown: 0,
+
 
   getRenderPosition(x: number, y: number) {
     return { x: x + RoomSprite.ROOM_BOUNDS.left, y: y + RoomSprite.ROOM_BOUNDS.top }
@@ -57,12 +60,21 @@ export const RoomSprite = {
     RoomSprite._drawBorders()
 
     /* events */
-    EventHandler.on(GLOBAL_EVENTS.STAGE_CLEAR, RoomSprite._updateDoorSprites)
+    EventHandler.on(GLOBAL_EVENTS.STAGE_CLEAR, () => {
+      RoomSprite._updateDoorSprites()
+      RoomSprite.enterDoorCooldown = 1100
+    })
 
     /* init doors */
     for (let i = 0; i < 4; i++) {
       RoomSprite.doors.push(new DoorSprite(i, app))
     }
+
+    app.ticker.add((ticker) => {
+      if (RoomSprite.enterDoorCooldown >= 0) {
+        RoomSprite.enterDoorCooldown -= ticker.deltaMS
+      }
+    })
   },
 
   _drawBorders() {
@@ -108,12 +120,15 @@ export const RoomSprite = {
   },
 
   _checkDoorCollision() {
+    if (RoomSprite.enterDoorCooldown > 0) return;
     /* check distances for doors */
     for (let idx = 0; idx < RoomSprite.openDoorsCount; idx++) {
       if (Distance({ x: Player.x, y: Player.y }, _DOOR_POSITIONS[idx]) < Player.SPRITE_SIZE * 0.7) {
         /* emit enter door event */
         EventHandler.emit(GLOBAL_EVENTS.DOOR_ENTER, { doorIdx: idx })
         RoomSprite._closeDoors()
+
+        SFX.play("doorClose")
 
         switch (idx) {
           case 0: /* entered top */

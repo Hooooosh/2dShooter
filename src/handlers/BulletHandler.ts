@@ -2,6 +2,7 @@ import * as PIXI from "pixi.js"
 import { ROOM_SIZE, RoomSprite } from "../sprites/RoomSprite"
 import { Player } from "../sprites/PlayerSprite"
 import { DRAW_ORDERS } from "../const/drawOrders"
+import { SFX } from "../helpers/soundLoader"
 
 let bulletContainer: PIXI.Container | null = null
 
@@ -59,6 +60,9 @@ export const BulletHandler = {
 
         bulletContainer?.addChild(particle.sprite)
         BulletHandler.bullets.push(particle)
+
+        /* play sfx */
+        SFX.play("enemyShoot", { volume: 0.15, speed: Math.random() * 2 + 1.5 })
     },
 
     fadeOutAll() {

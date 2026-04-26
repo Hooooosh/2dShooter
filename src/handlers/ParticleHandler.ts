@@ -3,6 +3,7 @@ import { ROOM_SIZE, RoomSprite } from "../sprites/RoomSprite"
 import { IGenericEnemy } from "../sprites/EnemySprite"
 import cubicBezierEase from "../helpers/bezier"
 import { DRAW_ORDERS } from "../const/drawOrders"
+import { SFX } from "../helpers/soundLoader"
 
 let genericParticleContainer: PIXI.Container | null = null
 let damageNumberParticleContainer: PIXI.Container | null = null
@@ -453,8 +454,24 @@ export const ParticleHandler = {
                     e.sprite.x = renderPos.x + (Math.random() - 0.5) * 15
                     e.sprite.y = renderPos.y + (Math.random() - 0.5) * 15
                 }
+
+                /* periodic beep */
+                const BEEP_INTERVAL = 150
+                if (Math.floor(e.life / BEEP_INTERVAL) > Math.floor((e.life - ms) / BEEP_INTERVAL)) {
+                    SFX.play("enemySpawn1", { volume: 0.08, speed: Math.sin(e.x) * 0.2 + 0.5 })
+                }
             }
             else {
+                /* play on first pass here */
+                if (e.life + ms >= BLINKS_UNTIL) {
+                    console.log("first")
+                    SFX.play("enemySpawn2", {
+                        volume: 0.3, speed: 2, onComplete: () => {
+                            SFX.play("enemySpawn3", { volume: 0.2, speed: Math.random() * 0.3 + 1.85 })
+                        }
+                    })
+                }
+
                 /* shrink anim */
                 const renderPos = RoomSprite.getRenderPosition(e.x, e.y)
                 e.sprite.x = renderPos.x
