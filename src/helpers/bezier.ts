@@ -10,7 +10,8 @@ export default function cubicBezierEase(
     let x = t
 
     for (let i = 0; i < iterations; i++) {
-        const { x: cx, y: cy } = cubicBezier(
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { x: cx, y: _cy } = cubicBezier(
             { x: 0, y: 0 },
             { x: p1x, y: p1y },
             { x: p2x, y: p2y },
