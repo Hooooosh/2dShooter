@@ -12,7 +12,7 @@ let sprite: PIXI.Sprite | null = null
 await PIXI.Assets.load([
     {
         alias: "sword",
-        src: "/assets/sword.png"
+        src: `${import.meta.env.BASE_URL}assets/sword.png`
     }
 ])
 
