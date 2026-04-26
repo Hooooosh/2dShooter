@@ -346,7 +346,7 @@ export const ENEMY_BEHAVIORS = {
             enemy.y = nextY
         }
     },
-    lookAtPlayerBehavior: (enemy: IGenericEnemy, ticker: Ticker,
+    lookAtPlayerBehavior: (enemy: IGenericEnemy, _ticker: Ticker,
         config: TLookAtPlayerBehavior & { _currentAngle?: number }
     ) => {
         if (!Player.getSprite() || !enemy.sprite) return

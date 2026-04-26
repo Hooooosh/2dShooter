@@ -39,7 +39,7 @@ export const Template = {
     },
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    _update(ticker: PIXI.Ticker) {
+    _update(_ticker: PIXI.Ticker) {
         if (!sprite) return
     },
 }
