@@ -2,7 +2,7 @@ import * as PIXI from "pixi.js"
 import { GenericEnemy, IGenericEnemy } from "../sprites/EnemySprite"
 import { TAnyBehaviorEntry } from "../const/enemyBehaviors"
 import { DRAW_ORDERS } from "../const/drawOrders"
-import { RoomSprite } from "../sprites/RoomSprite"
+import { ROOM_SIZE, RoomSprite } from "../sprites/RoomSprite"
 import { EventHandler, GLOBAL_EVENTS } from "../helpers/eventHandler"
 import { ParticleHandler } from "./ParticleHandler"
 import getSpritePosClampedToBounds from "../helpers/getSpritePosClampedToBounds"
@@ -38,8 +38,8 @@ export const EnemyHandler = {
         hurtboxSize?: number,
     ) {
         const enemy = new GenericEnemy(
-            x ?? Math.random() * RoomSprite.ROOM_SIZE,
-            y ?? Math.random() * RoomSprite.ROOM_SIZE,
+            x ?? Math.random() * ROOM_SIZE,
+            y ?? Math.random() * ROOM_SIZE,
             health = health ?? maxHealth,
             texture ?? PIXI.Assets.get("enemy-placeholder"),
             behaviors = behaviors?.map((e) => ({ behavior: e.behavior, config: e.config ?? {} })),

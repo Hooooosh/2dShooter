@@ -1,5 +1,5 @@
 import * as PIXI from "pixi.js"
-import { RoomSprite } from "../sprites/RoomSprite"
+import { ROOM_SIZE, RoomSprite } from "../sprites/RoomSprite"
 import { IGenericEnemy } from "../sprites/EnemySprite"
 import cubicBezierEase from "../helpers/bezier"
 import { DRAW_ORDERS } from "../const/drawOrders"
@@ -272,8 +272,8 @@ export const ParticleHandler = {
             /* check if particle is out of bounds or out of life */
             if (
                 (p.life >= p.maxLife) ||
-                p.x < 0 || p.x > RoomSprite.ROOM_SIZE ||
-                p.y < 0 || p.y > RoomSprite.ROOM_SIZE
+                p.x < 0 || p.x > ROOM_SIZE ||
+                p.y < 0 || p.y > ROOM_SIZE
             ) {
                 genericParticleContainer?.removeChild(p.sprite)
                 ParticleHandler.particles.splice(i, 1)
@@ -413,7 +413,7 @@ export const ParticleHandler = {
             const newLineWidth = (1 - newRadiusNormal) * c.initialLinewidth
             const newOpacity = (1 - newRadiusNormal) * c.maxAlpha
             c.sprite.clear()
-            
+
             const renderPos = RoomSprite.getRenderPosition(c.x, c.y)
             c.sprite.x = renderPos.x
             c.sprite.y = renderPos.y
@@ -443,17 +443,23 @@ export const ParticleHandler = {
 
             let size = e.size
 
+            /* rapid blinking */
+            e.sprite.alpha = Math.floor(e.life / BLINK_INTERVAL) % 2 == 0 ? 0.75 : 0.3
+
             if (e.life >= BLINKS_UNTIL) {
-                e.sprite.alpha = Math.floor(e.life / BLINK_INTERVAL) % 2 == 0 ? 0.65 : 0.0
+                /* random erratic displace */
+                if (Math.random() < 0.5) {
+                    const renderPos = RoomSprite.getRenderPosition(e.x, e.y)
+                    e.sprite.x = renderPos.x + (Math.random() - 0.5) * 15
+                    e.sprite.y = renderPos.y + (Math.random() - 0.5) * 15
+                }
             }
             else {
-                e.sprite.alpha = 0.5
-                const BEZIER_CONTROLS = [
-                    0,
-                    .5,
-                    .53,
-                    .92,
-                ] as [number, number, number, number]
+                /* shrink anim */
+                const renderPos = RoomSprite.getRenderPosition(e.x, e.y)
+                e.sprite.x = renderPos.x
+                e.sprite.y = renderPos.y
+                const BEZIER_CONTROLS = [0, 0.5, 0.3, 1.7] as [number, number, number, number]
                 const newNormal = cubicBezierEase(
                     Math.max(0, Math.min(1, e.life / (BLINKS_UNTIL))),
                     ...BEZIER_CONTROLS

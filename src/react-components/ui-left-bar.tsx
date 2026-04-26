@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { RoomSprite } from "../sprites/RoomSprite";
-import { GameLoopHandler, ILevelData } from "../handlers/GameLoopHandler";
+import { ROOM_SIZE, RoomSprite } from "../sprites/RoomSprite";
+import { LevelLoopHandler, ILevelData } from "../handlers/LevelLoopHandler";
 import { EventHandler, GLOBAL_EVENTS } from "../helpers/eventHandler";
 
 
@@ -8,24 +8,24 @@ import { EventHandler, GLOBAL_EVENTS } from "../helpers/eventHandler";
 export default function UiLeftBar() {
     const [globalLevels, setGlobalLevels] = useState<ILevelData[]>();
     const [displayData, setDisplayData] = useState({
-        currentLevelIdx: GameLoopHandler.currentLevelIdx,
-        currentWaveIdx: GameLoopHandler.currentWaveIdx,
+        currentLevelIdx: LevelLoopHandler.currentLevelIdx,
+        currentWaveIdx: LevelLoopHandler.currentWaveIdx,
     })
 
     const wavesThisLevel = useMemo(() => {
         if (!globalLevels || globalLevels.length == 0) return 0;
         const currentLevel = globalLevels[displayData.currentLevelIdx]
         if (!currentLevel) return 0;
-        return currentLevel.variants[GameLoopHandler.currentVariationIdx].enemyWaves!.length ?? 0
+        return currentLevel.variants[LevelLoopHandler.currentVariationIdx].enemyWaves!.length ?? 0
     }, [globalLevels, displayData.currentLevelIdx])
 
     useEffect(() => {
         EventHandler.on(GLOBAL_EVENTS.UPDATE_STAGE_INFO_UI, () => {
             setDisplayData({
-                currentLevelIdx: GameLoopHandler.currentLevelIdx,
-                currentWaveIdx: GameLoopHandler.currentWaveIdx,
+                currentLevelIdx: LevelLoopHandler.currentLevelIdx,
+                currentWaveIdx: LevelLoopHandler.currentWaveIdx,
             })
-            setGlobalLevels(GameLoopHandler.globalLevels)
+            setGlobalLevels(LevelLoopHandler.globalLevels)
         })
     }, [])
 
@@ -35,7 +35,7 @@ export default function UiLeftBar() {
                 left: 0,
                 top: RoomSprite.ROOM_BOUNDS.top,
                 width: RoomSprite.ROOM_BOUNDS.left,
-                height: RoomSprite.ROOM_SIZE
+                height: ROOM_SIZE
             }}
             className="absolute flex justify-end pointer-events-none font-mono"
         >

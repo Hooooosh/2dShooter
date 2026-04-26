@@ -1,5 +1,5 @@
 import { Application, Texture } from "pixi.js"
-import { RoomSprite } from "../sprites/RoomSprite"
+import { ROOM_SIZE, RoomSprite } from "../sprites/RoomSprite"
 import { TAnyBehaviorEntry } from "../const/enemyBehaviors"
 import { EnemyHandler } from "./EnemyHandler"
 import { EventHandler, GLOBAL_EVENTS } from "../helpers/eventHandler"
@@ -36,7 +36,7 @@ interface ILevelVariantData {
 
 export const LEVEL_COUNT = 4
 
-export const GameLoopHandler = {
+export const LevelLoopHandler = {
     globalLevels: [] as ILevelData[],
     currentLevelIdx: 0,
     currentVariationIdx: 0,
@@ -46,35 +46,35 @@ export const GameLoopHandler = {
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _init(_app: Application) {
-        if (GameLoopHandler.globalLevels.length == 0) {
-            GameLoopHandler._createLevels()
+        if (LevelLoopHandler.globalLevels.length == 0) {
+            LevelLoopHandler._createLevels()
         }
 
-        EventHandler.on(GLOBAL_EVENTS.DOOR_ENTER, GameLoopHandler._doorEnterHandler)
-        EventHandler.on(GLOBAL_EVENTS.ENEMY_DIE, GameLoopHandler._runWaveCheck)
+        EventHandler.on(GLOBAL_EVENTS.DOOR_ENTER, LevelLoopHandler._doorEnterHandler)
+        EventHandler.on(GLOBAL_EVENTS.ENEMY_DIE, LevelLoopHandler._runWaveCheck)
 
-        GameLoopHandler._runWaveCheck()
+        LevelLoopHandler._runWaveCheck()
     },
 
     _runWaveCheck() {
         /* if all dead */
-        if (!GameLoopHandler.areEnemiesAlive()) {
+        if (!LevelLoopHandler.areEnemiesAlive()) {
             /* if stage clear, setup doors */
-            if (GameLoopHandler.isLevelCleared()) {
-                if (GameLoopHandler.currentLevelIdx + 1 >= GameLoopHandler.globalLevels.length) {
+            if (LevelLoopHandler.isLevelCleared()) {
+                if (LevelLoopHandler.currentLevelIdx + 1 >= LevelLoopHandler.globalLevels.length) {
                     window.alert("all stages clear")
                 }
                 
                 console.log("setting up doors")
-                RoomSprite.displayedDoorCount = GameLoopHandler.globalLevels[GameLoopHandler.currentLevelIdx + 1].variants.length
+                RoomSprite.updateDoorCount(LevelLoopHandler.globalLevels[LevelLoopHandler.currentLevelIdx + 1].variants.length)
                 EventHandler.emit(GLOBAL_EVENTS.STAGE_CLEAR)
                 BulletHandler.bullets.forEach(b => b.markedForDeletion = true)
             }
             /* if any waves left, run next wave */
             else {
-                if (!GameLoopHandler.spawningNextWave) {
-                    GameLoopHandler.currentWaveIdx++
-                    GameLoopHandler._runCurrentWaveSpawnSequence()
+                if (!LevelLoopHandler.spawningNextWave) {
+                    LevelLoopHandler.currentWaveIdx++
+                    LevelLoopHandler._runCurrentWaveSpawnSequence()
                 }
             }
         }
@@ -86,10 +86,10 @@ export const GameLoopHandler = {
 
     _createLevels() {
         /* starting room */
-        GameLoopHandler.globalLevels.push({ variants: [{ enemyWaves: [] }] })
+        LevelLoopHandler.globalLevels.push({ variants: [{ enemyWaves: [] }] })
 
         /* tutorial room one choice */
-        GameLoopHandler.globalLevels.push({
+        LevelLoopHandler.globalLevels.push({
             variants: [
                 {
                     clearRewards: {
@@ -103,8 +103,8 @@ export const GameLoopHandler = {
                                 const shooter = ENEMY_TYPES.BASIC_SHOOTER()
                                 return {
                                     ...shooter,
-                                    x: RoomSprite.ROOM_SIZE / 2,
-                                    y: RoomSprite.ROOM_SIZE / 2,
+                                    x: ROOM_SIZE / 2,
+                                    y: ROOM_SIZE / 2,
                                 }
                             })()
                         ],
@@ -179,7 +179,7 @@ export const GameLoopHandler = {
                 /* one variation done */
             }
 
-            GameLoopHandler.globalLevels.push({
+            LevelLoopHandler.globalLevels.push({
                 variants: currentLevelStageVariations
             })
 
@@ -191,29 +191,27 @@ export const GameLoopHandler = {
 
     _doorEnterHandler(payload: { doorIdx: number }) {
         /* reset wave and doors */
-        console.log(payload.doorIdx)
-        GameLoopHandler.boardEmptyForMs = 0
-        GameLoopHandler.currentWaveIdx = 0
-        GameLoopHandler.currentLevelIdx += 1
-        GameLoopHandler.currentVariationIdx = payload.doorIdx
-        RoomSprite.displayedDoorCount = 0
+        LevelLoopHandler.boardEmptyForMs = 0
+        LevelLoopHandler.currentWaveIdx = 0
+        LevelLoopHandler.currentLevelIdx += 1
+        LevelLoopHandler.currentVariationIdx = payload.doorIdx
         EventHandler.emit(GLOBAL_EVENTS.UPDATE_STAGE_INFO_UI)
-        GameLoopHandler._runCurrentWaveSpawnSequence()
+        LevelLoopHandler._runCurrentWaveSpawnSequence()
     },
 
     isLevelCleared() {
-        const currentLevel = GameLoopHandler.globalLevels[GameLoopHandler.currentLevelIdx]
-        const currentVariation = currentLevel.variants[GameLoopHandler.currentVariationIdx] ?? { enemyWaves: [] }
+        const currentLevel = LevelLoopHandler.globalLevels[LevelLoopHandler.currentLevelIdx]
+        const currentVariation = currentLevel.variants[LevelLoopHandler.currentVariationIdx] ?? { enemyWaves: [] }
 
         const areWavesDone = (
             currentVariation.enemyWaves == undefined ||
             currentVariation.enemyWaves.length == 0 ||
-            GameLoopHandler.currentWaveIdx >= currentVariation.enemyWaves.length
+            LevelLoopHandler.currentWaveIdx >= currentVariation.enemyWaves.length
         )
 
         console.log("waves:", areWavesDone)
 
-        return areWavesDone && !GameLoopHandler.areEnemiesAlive()
+        return areWavesDone && !LevelLoopHandler.areEnemiesAlive()
     },
 
     areEnemiesAlive() {
@@ -225,31 +223,31 @@ export const GameLoopHandler = {
 
     _runCurrentWaveSpawnSequence() {
         /* if was last wave */
-        if (GameLoopHandler.isLevelCleared()) {
-            GameLoopHandler._runWaveCheck()
+        if (LevelLoopHandler.isLevelCleared()) {
+            LevelLoopHandler._runWaveCheck()
             console.log("stage clear")
             return;
         }
 
-        GameLoopHandler.spawningNextWave = true
+        LevelLoopHandler.spawningNextWave = true
 
         console.log("running current wave...")
         /* run current wave with small timeout */
         setTimeout(() => {
-            const currentLevel = GameLoopHandler.globalLevels[GameLoopHandler.currentLevelIdx]
-            const currentVariation = currentLevel.variants[GameLoopHandler.currentVariationIdx] ?? { enemyWaves: [] }
+            const currentLevel = LevelLoopHandler.globalLevels[LevelLoopHandler.currentLevelIdx]
+            const currentVariation = currentLevel.variants[LevelLoopHandler.currentVariationIdx] ?? { enemyWaves: [] }
             const currentEnemyWaves = currentVariation.enemyWaves ?? []
 
             if (currentEnemyWaves.length == 0) {
                 console.log("no enemy waves, stage clear")
-                GameLoopHandler._runWaveCheck()
+                LevelLoopHandler._runWaveCheck()
                 return
             }
 
-            console.log("enemy count:", currentEnemyWaves[GameLoopHandler.currentWaveIdx].length)
-            currentEnemyWaves[GameLoopHandler.currentWaveIdx].forEach(enemy => {
+            console.log("enemy count:", currentEnemyWaves[LevelLoopHandler.currentWaveIdx].length)
+            currentEnemyWaves[LevelLoopHandler.currentWaveIdx].forEach(enemy => {
                 setTimeout(() => {
-                    GameLoopHandler.spawningNextWave = false
+                    LevelLoopHandler.spawningNextWave = false
 
                     EnemyHandler.spawnEnemy(
                         enemy.x,
@@ -270,8 +268,8 @@ export const GameLoopHandler = {
     },
 
     _update(/* ticker: Ticker */) {
-        if (!GameLoopHandler.globalLevels || GameLoopHandler.globalLevels.length == 0) return;
+        if (!LevelLoopHandler.globalLevels || LevelLoopHandler.globalLevels.length == 0) return;
 
-        console.log(GameLoopHandler.currentLevelIdx, GameLoopHandler.currentWaveIdx)
+        console.log(LevelLoopHandler.currentLevelIdx, LevelLoopHandler.currentWaveIdx)
     },
 }

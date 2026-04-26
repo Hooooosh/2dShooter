@@ -2,7 +2,7 @@ import { ENEMY_TYPES, TEnemyType } from "../const/enemyTypes"
 import { BulletHandler } from "../handlers/BulletHandler"
 import { EnemyHandler } from "../handlers/EnemyHandler"
 import { Player } from "./PlayerSprite"
-import { RoomSprite } from "./RoomSprite"
+import { ROOM_SIZE } from "./RoomSprite"
 
 
 
@@ -77,17 +77,17 @@ export const _DebugFunctions = {
 
         /* evenly across room x */
         /* bottom 1 */
-        spawn(RoomSprite.ROOM_SIZE / 2, RoomSprite.ROOM_SIZE * (3 / 4))
+        spawn(ROOM_SIZE / 2, ROOM_SIZE * (3 / 4))
 
         const MID_AMT = 4
         for (let i = 1; i <= MID_AMT; i++) {
-            spawn(RoomSprite.ROOM_SIZE / (MID_AMT + 1) * i, RoomSprite.ROOM_SIZE * (2 / 4))
+            spawn(ROOM_SIZE / (MID_AMT + 1) * i, ROOM_SIZE * (2 / 4))
         }
 
         const BOT_AMT = 4
         const GAP = 30
         for (let i = 0; i < BOT_AMT; i++) {
-            spawn(RoomSprite.ROOM_SIZE / 2 - GAP * (BOT_AMT - 1) / 2 + i * GAP, RoomSprite.ROOM_SIZE * (1 / 4))
+            spawn(ROOM_SIZE / 2 - GAP * (BOT_AMT - 1) / 2 + i * GAP, ROOM_SIZE * (1 / 4))
         }
     }
 }

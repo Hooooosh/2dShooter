@@ -3,7 +3,7 @@ import { ALL_MOVEMENT_KEYS, KEYBOARD_MOVEMENT_RULES, MovementRule } from "../con
 import { Sword } from "./SwordSprite"
 import { GenericInputHandler } from "../helpers/input"
 import { EventHandler, GLOBAL_EVENTS } from "../helpers/eventHandler"
-import { RoomSprite } from "./RoomSprite"
+import { ROOM_SIZE, RoomSprite } from "./RoomSprite"
 import { Vector2 } from "../interfaces/genericInterfaces"
 import cubicBezierEase from "../helpers/bezier"
 import getSpritePosClampedToBounds from "../helpers/getSpritePosClampedToBounds"
@@ -106,8 +106,8 @@ export const Player: IPlayer = {
         sprite.zIndex = DRAW_ORDERS.PLAYER
 
         sprite.anchor.set(0.5)
-        Player.x = RoomSprite.ROOM_SIZE / 2
-        Player.y = RoomSprite.ROOM_SIZE / 2
+        Player.x = ROOM_SIZE / 2
+        Player.y = ROOM_SIZE / 2
 
         app.stage.addChild(sprite)
 

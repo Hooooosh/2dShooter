@@ -1,6 +1,6 @@
 import * as PIXI from "pixi.js"
 import { BulletHandler } from "../handlers/BulletHandler"
-import { RoomSprite } from "./RoomSprite"
+import { ROOM_SIZE } from "./RoomSprite"
 
 interface IBulletSpawner {
     INTERVAL: number
@@ -15,8 +15,8 @@ interface IBulletSpawner {
 export const BulletSpawner: IBulletSpawner = {
     INTERVAL: 200,
     currentInterval: 0,
-    x: RoomSprite.ROOM_SIZE / 2,
-    y: RoomSprite.ROOM_SIZE / 3,
+    x: ROOM_SIZE / 2,
+    y: ROOM_SIZE / 3,
     lastAngle: 0,
 
     _init(app: PIXI.Application) {

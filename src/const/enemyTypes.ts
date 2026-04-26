@@ -1,6 +1,6 @@
 import { Assets } from "pixi.js"
 import { GET_ENEMY_BEHAVIOR } from "./enemyBehaviors"
-import { ILevelInputGenericEnemy } from "../handlers/GameLoopHandler"
+import { ILevelInputGenericEnemy } from "../handlers/LevelLoopHandler"
 
 
 const _TYPES = {

@@ -4,7 +4,7 @@ import { IGenericEnemy } from "../sprites/EnemySprite";
 import { ParticleHandler } from "../handlers/ParticleHandler";
 import { Player } from "../sprites/PlayerSprite";
 import { degToRad, radToDeg } from "../helpers/angle";
-import { RoomSprite } from "../sprites/RoomSprite";
+import { ROOM_SIZE } from "../sprites/RoomSprite";
 
 export type TEnemyBehavior<TBehaviorConfig> = (
     enemy: IGenericEnemy,
@@ -331,16 +331,16 @@ export const ENEMY_BEHAVIORS = {
         const nextX = enemy.x + config._vx * ticker.deltaTime
         const nextY = enemy.y + config._vy * ticker.deltaTime
         const bounds = enemy.sprite.width / 2
-        if (nextX < bounds || nextX > RoomSprite.ROOM_SIZE - bounds) {
+        if (nextX < bounds || nextX > ROOM_SIZE - bounds) {
             config._vx *= -1
-            enemy.x = Math.max(bounds, Math.min(RoomSprite.ROOM_SIZE - bounds, nextX))
+            enemy.x = Math.max(bounds, Math.min(ROOM_SIZE - bounds, nextX))
         }
         else {
             enemy.x = nextX
         }
-        if (nextY < bounds || nextY > RoomSprite.ROOM_SIZE - bounds) {
+        if (nextY < bounds || nextY > ROOM_SIZE - bounds) {
             config._vy *= -1
-            enemy.y = Math.max(bounds, Math.min(RoomSprite.ROOM_SIZE - bounds, nextY))
+            enemy.y = Math.max(bounds, Math.min(ROOM_SIZE - bounds, nextY))
         }
         else {
             enemy.y = nextY

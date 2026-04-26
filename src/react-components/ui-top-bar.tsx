@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { Player } from "../sprites/PlayerSprite"
 import { EventHandler, GLOBAL_EVENTS } from "../helpers/eventHandler"
-import { RoomSprite } from "../sprites/RoomSprite"
+import { BANNER_SIZE, ROOM_SIZE, RoomSprite } from "../sprites/RoomSprite"
 
 
 export default function UiTopBar() {
@@ -41,8 +41,8 @@ export default function UiTopBar() {
             style={{
                 left: RoomSprite.ROOM_BOUNDS.left,
                 top: 0,
-                width: RoomSprite.ROOM_SIZE,
-                height: RoomSprite.BANNER_SIZE - 10
+                width: ROOM_SIZE,
+                height: BANNER_SIZE - 10
             }}
             className="absolute flex gap-4 items-center justify-between py-7 pointer-events-none"
         >

@@ -10,7 +10,7 @@ import { BulletHandler } from "./handlers/BulletHandler";
 import { EnemyHandler } from "./handlers/EnemyHandler";
 import DebugCanvas from "./react-components/debug-canvas";
 import { _DebugFunctions } from "./sprites/_DebugFunctions";
-import { GameLoopHandler } from "./handlers/GameLoopHandler";
+import { LevelLoopHandler } from "./handlers/LevelLoopHandler";
 import UiLeftBar from "./react-components/ui-left-bar";
 
 extend({
@@ -48,7 +48,7 @@ function Game() {
     EnemyHandler._init(app)
     BulletHandler._init(app)
 
-    GameLoopHandler._init(app)
+    LevelLoopHandler._init(app)
     
     _DebugFunctions._init()
 

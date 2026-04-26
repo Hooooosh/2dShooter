@@ -1,5 +1,5 @@
 import * as PIXI from "pixi.js"
-import { RoomSprite } from "../sprites/RoomSprite"
+import { ROOM_SIZE, RoomSprite } from "../sprites/RoomSprite"
 import { Player } from "../sprites/PlayerSprite"
 import { DRAW_ORDERS } from "../const/drawOrders"
 
@@ -92,8 +92,8 @@ export const BulletHandler = {
 
             /* check if bullet is oob */
             if (
-                b.x < 0 || b.x > RoomSprite.ROOM_SIZE ||
-                b.y < 0 || b.y > RoomSprite.ROOM_SIZE
+                b.x < 0 || b.x > ROOM_SIZE ||
+                b.y < 0 || b.y > ROOM_SIZE
             ) {
                 BulletHandler.fadeOut(b) /* start despawn if not already */
             }
