@@ -9,7 +9,7 @@ import { Player } from "./PlayerSprite";
 await PIXI.Assets.load([
     {
         alias: "enemy-placeholder",
-        src: "/assets/enemy-placeholder.png"
+        src: `${import.meta.env.BASE_URL}assets/enemy-placeholder.png`
     }
 ])
 

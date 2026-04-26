@@ -6,7 +6,7 @@ let sprite: PIXI.Sprite | null = null
 await PIXI.Assets.load([
     {
         alias: "ASSET_ALIAS",
-        src: "/assets/ASSET_NAME.png"
+        src: `${import.meta.env.BASE_URL}assets/ASSET_NAME.png`
     }
 ])
 

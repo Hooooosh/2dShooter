@@ -16,7 +16,7 @@ let sprite: PIXI.Sprite | null = null
 await PIXI.Assets.load([
     {
         alias: "player",
-        src: "/assets/player.png"
+        src: `${import.meta.env.BASE_URL}assets/player.png`
     }
 ])
 

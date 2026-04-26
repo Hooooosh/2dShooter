@@ -16,27 +16,27 @@ const _TYPES = {
 await Assets.load([
     {
         alias: "basic-shooter",
-        src: "/assets/enemy-basic-shooter.png"
+        src: `${import.meta.env.BASE_URL}assets/enemy-basic-shooter.png`
     },
     {
         alias: "turret",
-        src: "/assets/enemy-turret.png"
+        src: `${import.meta.env.BASE_URL}assets/enemy-turret.png`
     },
     {
         alias: "sniper",
-        src: "/assets/enemy-sniper.png"
+        src: `${import.meta.env.BASE_URL}assets/enemy-sniper.png`
     },
     {
         alias: "circle-turret",
-        src: "/assets/enemy-circle-turret.png"
+        src: `${import.meta.env.BASE_URL}assets/enemy-circle-turret.png`
     },
     {
         alias: "shotgun",
-        src: "/assets/enemy-shotgun.png"
+        src: "${import.meta.env.BASE_URL}assets/enemy-shotgun.png"
     },
     {
         alias: "dash",
-        src: "/assets/enemy-dash.png"
+        src: "${import.meta.env.BASE_URL}assets/enemy-dash.png"
     }
 ])
 

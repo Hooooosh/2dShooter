@@ -61,7 +61,7 @@ export default function UiTopBar() {
                     {/* empty stamina icons backdrop */}
                     {
                         Array.from({ length: Math.ceil(Player.MAX_STAMINA) }).map((_, i) => (
-                            <img key={i} src="/assets/stamina-empty.png" className="h-full opacity-50" />
+                            <img key={i} src={`${import.meta.env.BASE_URL}assets/stamina-empty.png`} className="h-full opacity-50" />
                         ))
                     }
                 </div>
@@ -69,14 +69,14 @@ export default function UiTopBar() {
                 {/* animated partial image */}
                 {
                     stamina < Player.MAX_STAMINA && (
-                        <img ref={staminaPartialEl} src="/assets/stamina-fill.png" className="h-full relative z-10 opacity-40" />
+                        <img ref={staminaPartialEl} src={`${import.meta.env.BASE_URL}assets/stamina-fill.png`} className="h-full relative z-10 opacity-40" />
                     )
                 }
 
                 {/* full images */}
                 {
                     Array.from({ length: Math.floor(stamina) }).map((_, i) => (
-                        <img key={i} src="/assets/stamina-fill.png" className="h-full z-10" />
+                        <img key={i} src={`${import.meta.env.BASE_URL}assets/stamina-fill.png`} className="h-full z-10" />
                     ))
                 }
 
@@ -95,8 +95,8 @@ const Heart = ({ filled }: { filled: boolean }) => {
                     opacity: filled ? 1 : 0,
                     animationName: filled ? "" : "heart-blink",
                 }}
-                src="/assets/heart-fill.png" className="h-full absolute" />
-            <img src="/assets/heart-empty.png" className="h-full" />
+                src={`${import.meta.env.BASE_URL}assets/heart-fill.png`} className="h-full absolute" />
+            <img src={`${import.meta.env.BASE_URL}assets/heart-empty.png`} className="h-full" />
         </div>
     )
 }
