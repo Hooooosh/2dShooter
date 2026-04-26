@@ -32,11 +32,11 @@ await Assets.load([
     },
     {
         alias: "shotgun",
-        src: "${import.meta.env.BASE_URL}assets/enemy-shotgun.png"
+        src: `${import.meta.env.BASE_URL}assets/enemy-shotgun.png`
     },
     {
         alias: "dash",
-        src: "${import.meta.env.BASE_URL}assets/enemy-dash.png"
+        src: `${import.meta.env.BASE_URL}assets/enemy-dash.png`
     }
 ])
 
