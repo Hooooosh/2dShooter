@@ -47,7 +47,7 @@ export class DoorSprite implements IDoorSprite {
 
         if (open && this.targetHeightNormal == 0) {
             /* opening, play particles */
-            ParticleHandler.spawnParticleExplosion(_DOOR_POSITIONS[this.index].x, _DOOR_POSITIONS[this.index].y, 5, 10, 0.3, undefined, Math.random() * 300 + 400)
+            ParticleHandler.spawnParticleExplosion(_DOOR_POSITIONS[this.index].x, _DOOR_POSITIONS[this.index].y, 2 + Math.random() * 8, 30, 0.3, undefined, Math.random() * 300 + 700)
             ParticleHandler.spawnCircleExplosion(_DOOR_POSITIONS[this.index].x, _DOOR_POSITIONS[this.index].y, 100, 20, 1000, undefined, 0.5)
         }
         if (!open && this.targetHeightNormal == 1) {
