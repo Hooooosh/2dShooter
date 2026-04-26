@@ -13,30 +13,62 @@ const _TYPES = {
     DASH: "DASH",
 } as const
 
-type TEnemyType = keyof typeof _TYPES
+await Assets.load([
+    {
+        alias: "basic-shooter",
+        src: "/assets/enemy-basic-shooter.png"
+    },
+    {
+        alias: "turret",
+        src: "/assets/enemy-turret.png"
+    },
+    {
+        alias: "sniper",
+        src: "/assets/enemy-sniper.png"
+    },
+    {
+        alias: "circle-turret",
+        src: "/assets/enemy-circle-turret.png"
+    },
+    {
+        alias: "shotgun",
+        src: "/assets/enemy-shotgun.png"
+    },
+    {
+        alias: "dash",
+        src: "/assets/enemy-dash.png"
+    }
+])
+
+export type TEnemyType = keyof typeof _TYPES
+
+/* behaviors in order of overwriting data eg rotation */
 
 export const ENEMY_TYPES: Record<TEnemyType, () => ILevelInputGenericEnemy> = {
     [_TYPES.BASIC_SHOOTER]: () => {
         const followDist = Math.random() * 50 + 150
         return {
             texture: Assets.get("basic-shooter"),
-            standardPrice: 25,
-            health: 5,
-            baseSpeed: Math.random() * 0.2 + 1.7,
+            standardPrice: 20,
+            health: 3,
+            baseSpeed: Math.random() * 0.5 + 1.7,
             behaviors: [
                 GET_ENEMY_BEHAVIOR.shootPeriodicallyBehavior(1300, 3),
                 GET_ENEMY_BEHAVIOR.followPlayerBehavior(followDist),
+                GET_ENEMY_BEHAVIOR.lookAtPlayerBehavior(),
             ]
         }
     },
     [_TYPES.TURRET_FAST]: () => {
         return {
             texture: Assets.get("turret"),
-            standardPrice: 35,
+            standardPrice: 45,
             health: 1,
             behaviors: [
-                GET_ENEMY_BEHAVIOR.shootPeriodicallyBehavior(250, 3.5),
-            ]
+                GET_ENEMY_BEHAVIOR.shootPeriodicallyBehavior(350, 2.5),
+                GET_ENEMY_BEHAVIOR.lookAtPlayerBehavior(),
+            ],
+            hurtsPlayerOnCollision: false,
         }
     },
     [_TYPES.SNIPER]: () => {
@@ -45,11 +77,12 @@ export const ENEMY_TYPES: Record<TEnemyType, () => ILevelInputGenericEnemy> = {
         return {
             texture: Assets.get("sniper"),
             standardPrice: 50,
-            health: 3,
-            baseSpeed: 0.5,
+            health: 2,
+            baseSpeed: 0.75,
             behaviors: [
                 GET_ENEMY_BEHAVIOR.shootPeriodicallyBehavior(4500, 15),
                 GET_ENEMY_BEHAVIOR.followPlayerBehavior(followDist),
+                GET_ENEMY_BEHAVIOR.lookAtPlayerBehavior(),
             ]
         }
     },
@@ -57,10 +90,11 @@ export const ENEMY_TYPES: Record<TEnemyType, () => ILevelInputGenericEnemy> = {
         return {
             texture: Assets.get("circle-turret"),
             standardPrice: 40,
-            health: 4,
+            health: 3,
             behaviors: [
                 GET_ENEMY_BEHAVIOR.shootBurstTowardPlayer(3000, 3, 360, 16, 0.98),
-            ]
+            ],
+            hurtsPlayerOnCollision: false,
         }
     },
     [_TYPES.SHOTGUN]: () => {
@@ -68,34 +102,36 @@ export const ENEMY_TYPES: Record<TEnemyType, () => ILevelInputGenericEnemy> = {
         return {
             texture: Assets.get("shotgun"),
             standardPrice: 75,
-            health: 6,
-            baseSpeed: Math.random() * 0.5 + 1.1,
+            health: 5,
+            baseSpeed: 1.7,
             behaviors: [
                 GET_ENEMY_BEHAVIOR.shootBurstTowardPlayer(2700, 4, 45, 5),
                 GET_ENEMY_BEHAVIOR.followPlayerBehavior(followDist, true),
+                GET_ENEMY_BEHAVIOR.lookAtPlayerBehavior(),
             ]
         }
     },
     [_TYPES.KAMIKAZE]: () => {
         return {
             texture: Assets.get("kamikaze"),
-            standardPrice: 9999999,
+            standardPrice: 999999999,
             health: 1,
             baseSpeed: 1.5,
             behaviors: [
-                GET_ENEMY_BEHAVIOR.kamikazeBehavior()
             ]
         }
     },
     [_TYPES.DASH]: () => {
-        return {
+        const enemy = {
             texture: Assets.get("dash"),
             standardPrice: 60,
-            health: 6,
+            health: 3,
             baseSpeed: 0,
             behaviors: [
-                GET_ENEMY_BEHAVIOR.dashBehavior(undefined, 16)
+                GET_ENEMY_BEHAVIOR.lookAtPlayerBehavior(1),
+                GET_ENEMY_BEHAVIOR.dashBehavior(undefined, 20),
             ]
         }
+        return enemy
     }
 }

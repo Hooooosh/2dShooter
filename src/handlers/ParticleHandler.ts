@@ -6,6 +6,7 @@ import { DRAW_ORDERS } from "../const/drawOrders"
 
 let genericParticleContainer: PIXI.Container | null = null
 let damageNumberParticleContainer: PIXI.Container | null = null
+let floorParticleContainer: PIXI.Container | null = null
 
 interface IParticle {
     x: number,
@@ -62,6 +63,16 @@ interface IEnemySpawnIndicatorEffect {
     sprite: PIXI.Graphics
 }
 
+interface IEnemyAfterImageEffect {
+    x: number,
+    y: number,
+    angle: number,
+    sprite: PIXI.Sprite,
+    life: number,
+    maxLife: number,
+    alpha: number
+}
+
 const NEGATIVE_FILTER = new PIXI.ColorMatrixFilter()
 NEGATIVE_FILTER.negative(true)
 
@@ -71,16 +82,20 @@ export const ParticleHandler = {
     damageNumbers: [] as IDamageNumberEffect[],
     circleExplosions: [] as ICricleExplosionEffect[],
     enemySpawnIndicators: [] as IEnemySpawnIndicatorEffect[],
+    enemyAfterImages: [] as IEnemyAfterImageEffect[],
 
     _init(app: PIXI.Application) {
         genericParticleContainer = new PIXI.Container()
         damageNumberParticleContainer = new PIXI.Container()
+        floorParticleContainer = new PIXI.Container()
 
         genericParticleContainer.zIndex = DRAW_ORDERS.PARTICLES
         damageNumberParticleContainer.zIndex = DRAW_ORDERS.DAMAGE_NUMBERS
+        floorParticleContainer.zIndex = DRAW_ORDERS.FLOOR_PARTICLES
 
         app.stage.addChild(genericParticleContainer)
         app.stage.addChild(damageNumberParticleContainer)
+        app.stage.addChild(floorParticleContainer)
         app.ticker.add(this._update)
     },
 
@@ -212,6 +227,30 @@ export const ParticleHandler = {
 
         genericParticleContainer?.addChild(effect.sprite)
         ParticleHandler.enemySpawnIndicators.push(effect)
+    },
+
+    spawnEnemyAfterImage(enemy: IGenericEnemy, life = 600, alpha = 0.7, isNegative = false) {
+        const effect: IEnemyAfterImageEffect = {
+            x: enemy.x,
+            y: enemy.y,
+            angle: enemy.sprite?.rotation ?? 0,
+            life: 0,
+            maxLife: life,
+            sprite: new PIXI.Sprite(enemy.sprite?.texture),
+            alpha: alpha
+        }
+
+        if (!enemy.sprite) return
+        const renderPos = RoomSprite.getRenderPosition(enemy.x, enemy.y)
+        effect.sprite.anchor.set(0.5)
+        effect.sprite.x = renderPos.x
+        effect.sprite.y = renderPos.y
+        effect.sprite.rotation = enemy.sprite?.rotation ?? 0
+        effect.sprite.alpha = alpha
+        effect.sprite.filters = isNegative ? [NEGATIVE_FILTER] : []
+
+        floorParticleContainer?.addChild(effect.sprite)
+        ParticleHandler.enemyAfterImages.push(effect)
     },
 
     _update(ticker: PIXI.Ticker) {
@@ -394,16 +433,16 @@ export const ParticleHandler = {
                 continue
             }
 
-            const BLINKS_UNTIL = e.initialLife / 3
+            const BLINKS_UNTIL = e.initialLife * (1 / 2)
             const BLINK_INTERVAL = 80
 
             let size = e.size
 
             if (e.life >= BLINKS_UNTIL) {
-                e.sprite.alpha = Math.floor(e.life / BLINK_INTERVAL) % 2 == 0 ? 0.8 : 0.4
+                e.sprite.alpha = Math.floor(e.life / BLINK_INTERVAL) % 2 == 0 ? 0.65 : 0.0
             }
             else {
-                e.sprite.alpha = 0.6
+                e.sprite.alpha = 0.5
                 const BEZIER_CONTROLS = [
                     0,
                     .5,
@@ -427,6 +466,23 @@ export const ParticleHandler = {
             e.sprite.stroke()
 
             e.life -= ms
+        }
+
+        /* ------------- ENEMY AFTERIMAGES ------------- */
+
+        for (let i = 0; i < ParticleHandler.enemyAfterImages.length; i++) {
+            const e = ParticleHandler.enemyAfterImages[i]
+            if (e.life >= e.maxLife) {
+                genericParticleContainer?.removeChild(e.sprite)
+                ParticleHandler.enemyAfterImages.splice(i, 1)
+                i--
+                continue
+            }
+
+            const alphaNormal = Math.max(0, Math.min(1, 1 - (e.life / e.maxLife)))
+            e.sprite.alpha = alphaNormal * e.alpha
+
+            e.life += ms
         }
     },
 }

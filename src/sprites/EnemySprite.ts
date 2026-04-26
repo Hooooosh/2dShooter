@@ -4,6 +4,7 @@ import getSpritePosClampedToBounds from "../helpers/getSpritePosClampedToBounds"
 import { RoomSprite } from "./RoomSprite";
 import { ParticleHandler } from "../handlers/ParticleHandler";
 import { EnemyHandler } from "../handlers/EnemyHandler";
+import { Player } from "./PlayerSprite";
 
 await PIXI.Assets.load([
     {
@@ -21,6 +22,7 @@ export interface IGenericEnemy {
     aliveFor: number
     hurtboxSize: number
     markedForDeletion: boolean
+    hurtsPlayerOnCollision?: boolean
 
     sprite: PIXI.Sprite | undefined
     behaviors: TAnyBehaviorEntry[]
@@ -40,16 +42,18 @@ export class GenericEnemy implements IGenericEnemy {
     hurtboxSize = 0;
     currentIframesMs = 0;
     markedForDeletion = false;
+    hurtsPlayerOnCollision = true;
 
     sprite = new PIXI.Sprite();
     behaviors = [] as TAnyBehaviorEntry[];
 
-    constructor(x: number, y: number, health?: number, texture?: PIXI.Texture, behaviors?: TAnyBehaviorEntry[], baseSpeed?: number, maxHealth?: number, hurtboxSize?: number) {
+    constructor(x: number, y: number, health?: number, texture?: PIXI.Texture, behaviors?: TAnyBehaviorEntry[], baseSpeed?: number, hurtsPlayerOnCollision?: boolean, maxHealth?: number, hurtboxSize?: number) {
         this.x = x;
         this.y = y;
         this.health = health ?? maxHealth ?? 1;
         this.maxHealth = maxHealth ?? 1;
         this.baseSpeed = baseSpeed ?? 3;
+        this.hurtsPlayerOnCollision = hurtsPlayerOnCollision ?? true;
         this.aliveFor = 0;
         this.sprite = new PIXI.Sprite(texture ?? PIXI.Assets.get("enemy-placeholder"))
         this.hurtboxSize = hurtboxSize ?? this.sprite.width;
@@ -126,10 +130,26 @@ export class GenericEnemy implements IGenericEnemy {
                 const dist = Math.sqrt(dstSq)
                 const overlap = (minDist - dist) * 0.5
                 const distInverse = 1 / dist
-                
+
                 this.x -= dx * distInverse * overlap
                 this.y -= dy * distInverse * overlap
             }
+
+
         })
+
+        /* run collision checks against player */
+        if (this.hurtsPlayerOnCollision && !this.markedForDeletion) {
+            const leniency = 0.7
+            const player = Player
+            const dx = player.x - this.x
+            const dy = player.y - this.y
+            const dstSq = dx * dx + dy * dy
+            const minDist = (this.hurtboxSize + player.SPRITE_SIZE) / 2 * leniency
+
+            if (dstSq > 0 && dstSq < minDist * minDist) {
+                player.damage(1)
+            }
+        }
     }
 }

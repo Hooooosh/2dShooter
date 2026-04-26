@@ -1,4 +1,4 @@
-import { ENEMY_BEHAVIORS, TFollowPlayerConfig, TShootPeriodicallyConfig, TAnyBehaviorEntry } from "../const/enemyBehaviors"
+import { ENEMY_TYPES, TEnemyType } from "../const/enemyTypes"
 import { BulletHandler } from "../handlers/BulletHandler"
 import { EnemyHandler } from "../handlers/EnemyHandler"
 import { Player } from "./PlayerSprite"
@@ -46,35 +46,28 @@ export const _DebugFunctions = {
                     this._summonDummies(true)
                     break;
 
-                /* SUMMON 1 SHOOTING FOLLOWING ENEMY */
-                case "Digit3":
-                    this._summonShootingEnemy()
-                    break;
-
-                /* SUMMON 15 */
-                case "Digit4":
-                    for (let i = 0; i < 15; i++) {
-                        this._summonShootingEnemy()
-                    }
-                    break;
-
                 default:
                     break;
             }
-        })
-    },
 
-    _summonShootingEnemy() {
-        EnemyHandler.spawnEnemy(
-            Math.random() * RoomSprite.ROOM_SIZE,
-            Math.random() * RoomSprite.ROOM_SIZE,
-            3,
-            undefined,
-            [
-                { behavior: ENEMY_BEHAVIORS.followPlayerBehavior, config: { keepDistance: 200 } as TFollowPlayerConfig },
-                { behavior: ENEMY_BEHAVIORS.shootPeriodicallyBehavior, config: { shootInterval: 2500 } as TShootPeriodicallyConfig },
-            ] as TAnyBehaviorEntry[],
-        )
+            /* debug spawn nth enemy */
+            if (e.code.includes("Numpad")) {
+                const num = parseInt(e.code.slice(-1))
+                if (num >= Object.keys(ENEMY_TYPES).length) return
+                const enemy = ENEMY_TYPES[Object.keys(ENEMY_TYPES)[num] as TEnemyType]()
+                EnemyHandler.spawnEnemy(
+                    enemy.x,
+                    enemy.y,
+                    enemy.health,
+                    enemy.texture,
+                    enemy.behaviors,
+                    enemy.baseSpeed,
+                    enemy.hurtsPlayerOnCollision,
+                    enemy.maxHealth,
+                    enemy.hurtboxSize,
+                )
+            }
+        })
     },
 
     _summonDummies(invincible = false) {

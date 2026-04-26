@@ -33,6 +33,7 @@ export const EnemyHandler = {
         texture?: PIXI.Texture,
         behaviors?: TAnyBehaviorEntry[],
         baseSpeed?: number,
+        hurtsPlayerOnCollision?: boolean,
         maxHealth?: number,
         hurtboxSize?: number,
     ) {
@@ -43,10 +44,11 @@ export const EnemyHandler = {
             texture ?? PIXI.Assets.get("enemy-placeholder"),
             behaviors = behaviors?.map((e) => ({ behavior: e.behavior, config: e.config ?? {} })),
             baseSpeed,
+            hurtsPlayerOnCollision,
             maxHealth,
             hurtboxSize
         )
-        const SPAWN_TIMER = Math.random() * 500 + 800
+        const SPAWN_TIMER = 1000
         
         const clamped = getSpritePosClampedToBounds({x: enemy.x, y: enemy.y}, enemy.sprite.width)
         enemy.x = clamped.x
@@ -63,11 +65,11 @@ export const EnemyHandler = {
         for (const enemy of EnemyHandler.enemies) {
             /* remove deleted from scene */
             if (enemy.markedForDeletion) {
-                EventHandler.emit(GLOBAL_EVENTS.ENEMY_DIE)
                 EnemyHandler.enemies.splice(EnemyHandler.enemies.indexOf(enemy), 1)
                 if (enemy.sprite && enemy.sprite.parent) {
                     enemy.sprite.parent.removeChild(enemy.sprite)
                 }
+                EventHandler.emit(GLOBAL_EVENTS.ENEMY_DIE)
             }
             else {
                 enemy._update(ticker)

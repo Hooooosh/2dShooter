@@ -47,6 +47,11 @@ export type TDashBehavior = {
     dashDecay?: number
 }
 
+export type TLookAtPlayerBehavior = {
+    intensity?: number,
+    condition?: () => boolean
+}
+
 export const ENEMY_BEHAVIORS = {
     followPlayerBehavior: (enemy: IGenericEnemy, ticker: Ticker,
         config: TFollowPlayerConfig & { _actualFollowDist?: number }
@@ -84,7 +89,7 @@ export const ENEMY_BEHAVIORS = {
             enemy.x = playerPos.x - Math.cos(angleToPlayer) * config._actualFollowDist
             enemy.y = playerPos.y - Math.sin(angleToPlayer) * config._actualFollowDist
 
-            /* if erratic, roll chance to randomize it a bit */
+            /* if erratic, roll chance to randomize followDist */
             if (config.isErratic) {
                 if (Math.random() < 0.1) {
                     const minFact = 0.75
@@ -169,13 +174,25 @@ export const ENEMY_BEHAVIORS = {
             /* else, shotgun */
             else {
                 for (let i = 0; i < config.bulletCount; i++) {
+                    const headingAngle = startAngle + (i * spreadRad / (config.bulletCount - 1))
                     BulletHandler.spawnBullet(
                         enemy.x,
                         enemy.y,
-                        Math.cos(startAngle + (i * spreadRad / (config.bulletCount - 1))) * config.bulletSpeed,
-                        Math.sin(startAngle + (i * spreadRad / (config.bulletCount - 1))) * config.bulletSpeed,
+                        Math.cos(headingAngle) * config.bulletSpeed,
+                        Math.sin(headingAngle) * config.bulletSpeed,
                         undefined,
                         config.bulletDecay
+                    )
+                    ParticleHandler.spawnParticle(
+                        enemy.x, 
+                        enemy.y, 
+                        Math.cos(headingAngle + Math.PI) * (config.bulletSpeed) * (Math.random() * 0.4 + 0.6) * 5, 
+                        Math.sin(headingAngle + Math.PI) * (config.bulletSpeed) * (Math.random() * 0.4 + 0.6) * 5,
+                        300,
+                        0xffaaaa,
+                        0.4,
+                        0.90,
+                        3 + Math.random() * 3
                     )
                 }
             }
@@ -243,7 +260,7 @@ export const ENEMY_BEHAVIORS = {
         enemy.y += config._vy * ticker.deltaTime
     },
     dashBehavior: (enemy: IGenericEnemy, ticker: Ticker,
-        config: TDashBehavior & { _vx?: number, _vy?: number, _canPlayWarning?: boolean, _currentTime?: number }
+        config: TDashBehavior & { _vx?: number, _vy?: number, _canPlayWarning?: boolean, _currentTime?: number, _afterImageTime?: number }
     ) => {
         if (!Player.getSprite() || !enemy.sprite) return
 
@@ -253,19 +270,43 @@ export const ENEMY_BEHAVIORS = {
         config.dashSpeed ??= 5
         config.dashDecay ??= 0.985
         config._currentTime ??= 0
+        config._afterImageTime ??= 0
         config._canPlayWarning ??= true
+
+        const AFTERIMAGE_INTERVAL = 250
+
+        const speedSq = config._vx * config._vx + config._vy * config._vy
 
         if (config._vx == 0 && config._vy == 0) {
             /* only count cooldown when stationary */
             config._currentTime += ticker.deltaMS
         }
-        else{
+        else {
+            /* if moving */
             /* apply decay to speed */
             config._vx *= config.dashDecay
             config._vy *= config.dashDecay
 
-            if(Math.abs(config._vx) < 0.1) config._vx = 0
-            if(Math.abs(config._vy) < 0.1) config._vy = 0
+            if (speedSq < 3) {
+                config._vx *= 0.97
+                config._vy *= 0.97
+            }
+
+            if (speedSq < 0.5) {
+                config._vx = 0
+                config._vy = 0
+            }
+            else {
+                /* update facing angle */
+                const headingAngle = Math.atan2(config._vy, config._vx)
+                enemy.sprite.rotation = headingAngle - Math.PI / 2
+            }
+
+            /* spawn afterimage if can */
+            config._afterImageTime += ticker.deltaMS
+            if (Math.floor(config._afterImageTime / AFTERIMAGE_INTERVAL) < Math.floor((config._afterImageTime + ticker.deltaMS) / AFTERIMAGE_INTERVAL)) {
+                ParticleHandler.spawnEnemyAfterImage(enemy, 800, Math.min(0.7, speedSq / 15), false)
+            }
         }
 
         /* play dash warning particle */
@@ -280,8 +321,9 @@ export const ENEMY_BEHAVIORS = {
             config._currentTime = 0
             const playerPos = { x: Player.x, y: Player.y }
             const angleToPlayer = Math.atan2(playerPos.y - enemy.y, playerPos.x - enemy.x)
-            config._vx = Math.cos(angleToPlayer) * config.dashSpeed
-            config._vy = Math.sin(angleToPlayer) * config.dashSpeed
+            const newDashSpeed = config.dashSpeed * (0.7 + Math.random() * 0.6)
+            config._vx = Math.cos(angleToPlayer) * newDashSpeed
+            config._vy = Math.sin(angleToPlayer) * newDashSpeed
             config._canPlayWarning = true
         }
 
@@ -303,6 +345,31 @@ export const ENEMY_BEHAVIORS = {
         else {
             enemy.y = nextY
         }
+    },
+    lookAtPlayerBehavior: (enemy: IGenericEnemy, ticker: Ticker,
+        config: TLookAtPlayerBehavior & { _currentAngle?: number }
+    ) => {
+        if (!Player.getSprite() || !enemy.sprite) return
+        config.intensity ??= 0.2
+        config.condition ??= () => true
+
+        if (!config.condition()) return
+
+        const playerPos = {
+            x: Player.x,
+            y: Player.y,
+        }
+
+        const angleToPlayer = Math.atan2(playerPos.y - enemy.y, playerPos.x - enemy.x)
+        config._currentAngle ??= angleToPlayer
+
+        /* prevent angle wrap around jerks */
+        if (Math.abs(angleToPlayer - config._currentAngle) > Math.PI) {
+            config._currentAngle += Math.sign(angleToPlayer - config._currentAngle) * Math.PI * 2
+        }
+
+        config._currentAngle += (angleToPlayer - config._currentAngle) * config.intensity
+        enemy.sprite.rotation = config._currentAngle - Math.PI / 2
     }
 }
 
@@ -326,5 +393,9 @@ export const GET_ENEMY_BEHAVIOR = {
     dashBehavior: (dashCooldown?: number, dashSpeed?: number, dashDecay?: number) => ({
         behavior: ENEMY_BEHAVIORS.dashBehavior,
         config: { dashCooldown, dashSpeed, dashDecay } as TDashBehavior
+    } as TAnyBehaviorEntry),
+    lookAtPlayerBehavior: (intensity?: number, condition?: () => boolean) => ({
+        behavior: ENEMY_BEHAVIORS.lookAtPlayerBehavior,
+        config: { intensity, condition } as TLookAtPlayerBehavior
     } as TAnyBehaviorEntry)
 }

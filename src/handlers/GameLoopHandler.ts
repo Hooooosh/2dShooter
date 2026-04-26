@@ -11,6 +11,7 @@ export interface ILevelInputGenericEnemy {
     health?: number,
     baseSpeed?: number,
     standardPrice: number,
+    hurtsPlayerOnCollision?: boolean,
     maxHealth?: number,
     behaviors?: TAnyBehaviorEntry[],
     hurtboxSize?: number,
@@ -48,10 +49,37 @@ export const GameLoopHandler = {
             GameLoopHandler._createLevels()
         }
 
-        EventHandler.on(GLOBAL_EVENTS.DOOR_ENTER, GameLoopHandler._runNextLevel)
-        EventHandler.on(GLOBAL_EVENTS.ENEMY_DIE, GameLoopHandler._runNextWaveSpawnTimer)
+        EventHandler.on(GLOBAL_EVENTS.DOOR_ENTER, GameLoopHandler._doorEnterHandler)
+        EventHandler.on(GLOBAL_EVENTS.ENEMY_DIE, GameLoopHandler._runWaveCheck)
 
-        GameLoopHandler._runCurrentWave()
+        GameLoopHandler._runWaveCheck()
+    },
+
+    _runWaveCheck() {
+        /* if all dead */
+        if (!GameLoopHandler.areEnemiesAlive()) {
+            /* if stage clear, setup doors */
+            if (GameLoopHandler.isLevelCleared()) {
+                if (GameLoopHandler.currentLevelIdx + 1 >= GameLoopHandler.globalLevels.length) {
+                    window.alert("all stages clear")
+                }
+                
+                console.log("setting up doors")
+                RoomSprite.displayedDoorCount = GameLoopHandler.globalLevels[GameLoopHandler.currentLevelIdx + 1].variants.length
+                EventHandler.emit(GLOBAL_EVENTS.STAGE_CLEAR)
+            }
+            /* if any waves left, run next wave */
+            else {
+                if (!GameLoopHandler.spawningNextWave) {
+                    GameLoopHandler.currentWaveIdx++
+                    GameLoopHandler._runCurrentWaveSpawnSequence()
+                }
+            }
+        }
+
+        /* if enemies alive, do nothing */
+
+        EventHandler.emit(GLOBAL_EVENTS.UPDATE_STAGE_INFO_UI)
     },
 
     _createLevels() {
@@ -69,7 +97,7 @@ export const GameLoopHandler = {
                     },
                     enemyWaves: [
                         [
-                            (()=>{
+                            (() => {
                                 const shooter = ENEMY_TYPES.BASIC_SHOOTER()
                                 return {
                                     ...shooter,
@@ -109,12 +137,12 @@ export const GameLoopHandler = {
                 let currentCredits = 0
                 while (currentCredits < enemyCreditsForStage) {
                     /* if cant spawn any within credits, stop */
-                    if(Object.values(ENEMY_TYPES).filter(e=>e().standardPrice + currentCredits <= enemyCreditsForStage).length == 0) break
+                    if (Object.values(ENEMY_TYPES).filter(e => e().standardPrice + currentCredits <= enemyCreditsForStage).length == 0) break
 
                     const chosenEnemy = Object.values(ENEMY_TYPES)[Math.floor(Math.random() * Object.keys(ENEMY_TYPES).length)]() as ILevelInputGenericEnemy
 
                     /* roll until enemy small enough found */
-                    if(chosenEnemy.standardPrice + currentCredits > enemyCreditsForStage) continue
+                    if (chosenEnemy.standardPrice + currentCredits > enemyCreditsForStage) continue
 
                     /* calc credits */
                     currentCredits += chosenEnemy.standardPrice
@@ -159,7 +187,7 @@ export const GameLoopHandler = {
 
     },
 
-    _runNextLevel(payload: { doorIdx: number }) {
+    _doorEnterHandler(payload: { doorIdx: number }) {
         /* reset wave and doors */
         GameLoopHandler.boardEmptyForMs = 0
         GameLoopHandler.currentWaveIdx = 0
@@ -167,86 +195,75 @@ export const GameLoopHandler = {
         GameLoopHandler.currentVariationIdx = payload.doorIdx
         RoomSprite.displayedDoorCount = 0
         EventHandler.emit(GLOBAL_EVENTS.UPDATE_STAGE_INFO_UI)
-
-        if (GameLoopHandler.currentLevelIdx + 1 >= GameLoopHandler.globalLevels.length) {
-            console.log("all stages clear")
-            return;
-        }
-        else {
-            GameLoopHandler._runCurrentWaveSpawnTimer()
-        }
+        GameLoopHandler._runCurrentWaveSpawnSequence()
     },
 
-    _runNextWave() {
-        GameLoopHandler.currentWaveIdx += 1
-        GameLoopHandler._runCurrentWave()
-        EventHandler.emit(GLOBAL_EVENTS.UPDATE_STAGE_INFO_UI)
-    },
-
-    _runCurrentWave() {
+    isLevelCleared() {
         const currentLevel = GameLoopHandler.globalLevels[GameLoopHandler.currentLevelIdx]
         const currentVariation = currentLevel.variants[GameLoopHandler.currentVariationIdx] ?? { enemyWaves: [] }
-        console.log("running current wave")
-        if (
+
+        const areWavesDone = (
             currentVariation.enemyWaves == undefined ||
             currentVariation.enemyWaves.length == 0 ||
             GameLoopHandler.currentWaveIdx >= currentVariation.enemyWaves.length
-        ) {
-            if (GameLoopHandler.currentLevelIdx + 1 >= GameLoopHandler.globalLevels.length) {
-                console.log("all stages clear")
-            }
-            console.log("stage clear")
+        )
 
-            RoomSprite.displayedDoorCount = GameLoopHandler.globalLevels[GameLoopHandler.currentLevelIdx + 1].variants.length
-            EventHandler.emit(GLOBAL_EVENTS.STAGE_CLEAR)
+        console.log("waves:", areWavesDone)
+
+        return areWavesDone && !GameLoopHandler.areEnemiesAlive()
+    },
+
+    areEnemiesAlive() {
+        console.log("enemy count:", EnemyHandler.enemies.length)
+        console.log("enemies waiting:", EnemyHandler.waitingToSpawn.length > 0)
+        console.log("are enemies alive:", EnemyHandler.enemies.filter(e => !e.markedForDeletion).length > 0 || EnemyHandler.waitingToSpawn.length > 0)
+        return EnemyHandler.enemies.filter(e => !e.markedForDeletion).length > 0 || EnemyHandler.waitingToSpawn.length > 0
+    },
+
+    _runCurrentWaveSpawnSequence() {
+        /* if was last wave */
+        if (GameLoopHandler.isLevelCleared()) {
+            GameLoopHandler._runWaveCheck()
+            console.log("stage clear")
             return;
         }
 
-        const currentEnemyWaves = currentVariation.enemyWaves ?? []
+        GameLoopHandler.spawningNextWave = true
 
-        console.log("enemy count:", currentEnemyWaves[GameLoopHandler.currentWaveIdx].length)
-        currentEnemyWaves[GameLoopHandler.currentWaveIdx].forEach(enemy => {
-            EnemyHandler.spawnEnemy(
-                enemy.x,
-                enemy.y,
-                enemy.health,
-                enemy.texture,
-                enemy.behaviors,
-                enemy.baseSpeed,
-                enemy.maxHealth,
-                enemy.hurtboxSize,
-            )
-        })
+        console.log("running current wave...")
+        /* run current wave with small timeout */
+        setTimeout(() => {
+            const currentLevel = GameLoopHandler.globalLevels[GameLoopHandler.currentLevelIdx]
+            const currentVariation = currentLevel.variants[GameLoopHandler.currentVariationIdx] ?? { enemyWaves: [] }
+            const currentEnemyWaves = currentVariation.enemyWaves ?? []
 
-        EventHandler.emit(GLOBAL_EVENTS.UPDATE_STAGE_INFO_UI)
-    },
+            if (currentEnemyWaves.length == 0) {
+                console.log("no enemy waves, stage clear")
+                GameLoopHandler._runWaveCheck()
+                return
+            }
 
-    _runCurrentWaveSpawnTimer() {
-        if (EnemyHandler.enemies.filter(e => !e.markedForDeletion).length == 0 && !GameLoopHandler.spawningNextWave) {
-            console.log("running current wave...")
-            GameLoopHandler.spawningNextWave = true
+            console.log("enemy count:", currentEnemyWaves[GameLoopHandler.currentWaveIdx].length)
+            currentEnemyWaves[GameLoopHandler.currentWaveIdx].forEach(enemy => {
+                setTimeout(() => {
+                    GameLoopHandler.spawningNextWave = false
 
-            EventHandler.emit(GLOBAL_EVENTS.UPDATE_STAGE_INFO_UI)
-
-            setTimeout(() => {
-                GameLoopHandler._runCurrentWave()
-                GameLoopHandler.spawningNextWave = false
-            }, 1200)
-        }
-    },
-
-    _runNextWaveSpawnTimer() {
-        if (EnemyHandler.enemies.filter(e => !e.markedForDeletion).length == 0 && !GameLoopHandler.spawningNextWave) {
-            console.log("running next wave...")
-            GameLoopHandler.spawningNextWave = true
+                    EnemyHandler.spawnEnemy(
+                        enemy.x,
+                        enemy.y,
+                        enemy.health,
+                        enemy.texture,
+                        enemy.behaviors,
+                        enemy.baseSpeed,
+                        enemy.hurtsPlayerOnCollision,
+                        enemy.maxHealth,
+                        enemy.hurtboxSize,
+                    )
+                }, Math.random() * 400)
+            })
 
             EventHandler.emit(GLOBAL_EVENTS.UPDATE_STAGE_INFO_UI)
-
-            setTimeout(() => {
-                GameLoopHandler._runNextWave()
-                GameLoopHandler.spawningNextWave = false
-            }, 1200)
-        }
+        }, 600)
     },
 
     _update(/* ticker: Ticker */) {

@@ -1,5 +1,6 @@
 export const DRAW_ORDERS = {
     ROOM: 0,
+    FLOOR_PARTICLES: 1,
     DOORS: 5,
     ENEMIES: 10,
     PLAYER: 20,

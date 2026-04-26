@@ -37,7 +37,7 @@ export default function UiLeftBar() {
                 width: RoomSprite.ROOM_BOUNDS.left,
                 height: RoomSprite.ROOM_SIZE
             }}
-            className="absolute flex justify-end pointer-events-none"
+            className="absolute flex justify-end pointer-events-none font-mono"
         >
             <div className="w-fit h-full flex flex-col gap-2 pr-8 text-white items-end">
                 <div>
