@@ -109,6 +109,8 @@ export const RoomSprite = {
   },
 
   updateDoorCount(count: number) {
+    if(RoomSprite.openDoorsCount == count) return;
+    SFX.play("doorOpen")
     RoomSprite.openDoorsCount = count
     RoomSprite._updateDoorSprites()
   },

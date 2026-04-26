@@ -69,9 +69,12 @@ export const GameStateHandler = {
                 console.log("setting up doors")
                 setTimeout(() => {
                     RoomSprite.updateDoorCount(GameStateHandler.globalLevels[GameStateHandler.currentLevelIdx + 1].variants.length)
-                    SFX.play("doorOpen")
                 }, 400);
-                SFX.play("stageClear", { volume: 0.3, speed: Math.random() * 0.2 + 0.9 })
+
+                /* only play sfx when not first level */
+                if(GameStateHandler.currentLevelIdx > 0) {
+                    SFX.play("stageClear", { volume: 0.3, speed: Math.random() * 0.2 + 0.9 })
+                }
                 
                 EventHandler.emit(GLOBAL_EVENTS.STAGE_CLEAR)
                 BulletHandler.bullets.forEach(b => b.life = b.maxLife)

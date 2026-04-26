@@ -439,7 +439,7 @@ export const ParticleHandler = {
                 continue
             }
 
-            const BLINKS_UNTIL = e.initialLife * (1 / 2)
+            const BLINKS_UNTIL = e.initialLife * (3 / 5)
             const BLINK_INTERVAL = 80
 
             let size = e.size
@@ -451,14 +451,14 @@ export const ParticleHandler = {
                 /* random erratic displace */
                 if (Math.random() < 0.5) {
                     const renderPos = RoomSprite.getRenderPosition(e.x, e.y)
-                    e.sprite.x = renderPos.x + (Math.random() - 0.5) * 15
-                    e.sprite.y = renderPos.y + (Math.random() - 0.5) * 15
+                    e.sprite.x = renderPos.x + (Math.random() - 0.5) * 20
+                    e.sprite.y = renderPos.y + (Math.random() - 0.5) * 20
                 }
 
                 /* periodic beep */
-                const BEEP_INTERVAL = 150
+                const BEEP_INTERVAL = 250
                 if (Math.floor(e.life / BEEP_INTERVAL) > Math.floor((e.life - ms) / BEEP_INTERVAL)) {
-                    SFX.play("enemySpawn1", { volume: 0.08, speed: Math.sin(e.x) * 0.2 + 0.5 })
+                    SFX.play("enemySpawn1", { volume: 0.05, speed: Math.sin(e.x) * 0.1 + 0.6 })
                 }
             }
             else {
@@ -476,7 +476,7 @@ export const ParticleHandler = {
                 const renderPos = RoomSprite.getRenderPosition(e.x, e.y)
                 e.sprite.x = renderPos.x
                 e.sprite.y = renderPos.y
-                const BEZIER_CONTROLS = [0, 0.5, 0.3, 1.7] as [number, number, number, number]
+                const BEZIER_CONTROLS = [0, 0.5, 0.3, 2.5] as [number, number, number, number]
                 const newNormal = cubicBezierEase(
                     Math.max(0, Math.min(1, e.life / (BLINKS_UNTIL))),
                     ...BEZIER_CONTROLS

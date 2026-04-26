@@ -77,17 +77,15 @@ export class GenericEnemy implements IGenericEnemy {
 
         this.health -= amount
 
-        SFX.play("enemyHit", { volume: 0.2, speed: Math.random() * 0.5 + 0.75 })
-
         ParticleHandler.spawnDamageNumber(this.x, this.y, amount, wasCrit)
 
         if (this.health <= 0) {
             /* die */
             if (Math.random() < 0.5)
-                SFX.play("enemyDie1", { volume: 0.2, speed: Math.random() * 0.5 + 0.75 })
+                SFX.play("enemyDie1", { volume: 0.4, speed: Math.random() * 0.5 + 0.75 })
             else
-                SFX.play("enemyDie2", { volume: 0.2, speed: Math.random() * 0.5 + 0.75 })
-            
+                SFX.play("enemyDie2", { volume: 0.4, speed: Math.random() * 0.5 + 0.75 })
+
             this.markedForDeletion = true
             ParticleHandler.spawnParticleExplosion(this.x, this.y, 5, Math.min(50, this.maxHealth * 5) + 5, 0.8)
             ParticleHandler.spawnCircleExplosion(this.x, this.y, 100, this.sprite.width / 2, 1500)
@@ -95,6 +93,13 @@ export class GenericEnemy implements IGenericEnemy {
         else {
             /* normal damage particles */
             ParticleHandler.spawnParticleExplosion(this.x, this.y, undefined, Math.min(15, amount * 2 + 2), 0.4, undefined, 300)
+
+            if (wasCrit) {
+                SFX.play("enemyDie2", { volume: 0.4, speed: Math.random() * 1 + 1.5 })
+            }
+            else {
+                SFX.play("enemyHit", { volume: 0.2, speed: Math.random() * 1 + 1 })
+            }
         }
     }
 

@@ -62,7 +62,7 @@ export const BulletHandler = {
         BulletHandler.bullets.push(particle)
 
         /* play sfx */
-        SFX.play("enemyShoot", { volume: 0.15, speed: Math.random() * 2 + 1.5 })
+        SFX.play("enemyShoot", { volume: 0.5, speed: Math.random() * 2 + 1.5 })
     },
 
     fadeOutAll() {
