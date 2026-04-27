@@ -55,24 +55,18 @@ export const _DebugFunctions = {
                 const num = parseInt(e.code.slice(-1))
                 if (num >= Object.keys(ENEMY_TYPES).length) return
                 const enemy = ENEMY_TYPES[Object.keys(ENEMY_TYPES)[num] as TEnemyType]()
-                EnemyHandler.spawnEnemy(
-                    enemy.x,
-                    enemy.y,
-                    enemy.health,
-                    enemy.texture,
-                    enemy.behaviors,
-                    enemy.baseSpeed,
-                    enemy.hurtsPlayerOnCollision,
-                    enemy.maxHealth,
-                    enemy.hurtboxSize,
-                )
+                EnemyHandler.spawnEnemy(enemy)
             }
         })
     },
 
     _summonDummies(invincible = false) {
         function spawn(x: number, y: number) {
-            EnemyHandler.spawnEnemy(x, y, invincible ? 9999999 : 1)
+            const enemy = ENEMY_TYPES.DUMMY()
+            enemy.x = x
+            enemy.y = y
+            enemy.health = invincible ? 9999999 : 1
+            EnemyHandler.spawnEnemy(enemy)
         }
 
         /* evenly across room x */

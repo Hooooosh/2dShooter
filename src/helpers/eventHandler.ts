@@ -12,7 +12,9 @@ export enum GLOBAL_EVENTS {
   DOOR_ENTER,
   ENEMY_DIE,
   UPDATE_STAGE_INFO_UI,
-  _DEBUG_DRAW_RECT
+
+  _DEBUG_DRAW_RECT,
+  _DEBUG_DRAW_DOT,
 }
 
 type EventMap = {
@@ -26,7 +28,9 @@ type EventMap = {
   [GLOBAL_EVENTS.ENEMY_DIE]: void;
   [GLOBAL_EVENTS.STAGE_CLEAR]: void;
   [GLOBAL_EVENTS.UPDATE_STAGE_INFO_UI]: void;
+
   [GLOBAL_EVENTS._DEBUG_DRAW_RECT]: IHitbox;
+  [GLOBAL_EVENTS._DEBUG_DRAW_DOT]: Vector2;
 }
 
 class _EventHandler {
@@ -64,17 +68,6 @@ class _EventHandler {
     }
   }
 
-  emit(event: GLOBAL_EVENTS.HEALTH_CHANGED): void
-  emit(event: GLOBAL_EVENTS.STAMINA_CHANGED): void
-  emit(event: GLOBAL_EVENTS.PAUSE): void
-  emit(event: GLOBAL_EVENTS.UNPAUSE): void
-  emit(event: GLOBAL_EVENTS.TELEPORT, payload: Vector2): void
-  emit(event: GLOBAL_EVENTS.INTERACT, payload: { entityId: string }): void
-  emit(event: GLOBAL_EVENTS.DOOR_ENTER, payload: { doorIdx: number }): void
-  emit(event: GLOBAL_EVENTS.ENEMY_DIE): void
-  emit(event: GLOBAL_EVENTS.STAGE_CLEAR): void
-  emit(event: GLOBAL_EVENTS.UPDATE_STAGE_INFO_UI): void
-  emit(event: GLOBAL_EVENTS._DEBUG_DRAW_RECT, payload: IHitbox): void
   emit<K extends keyof EventMap>(event: K, payload?: EventMap[K]) {
     const handlers = this.events[event] as Set<(payload: EventMap[K]) => void> | undefined
 

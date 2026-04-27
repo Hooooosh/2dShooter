@@ -39,9 +39,7 @@ export const HitboxHandler = {
                 const isHit = HitboxHandler._runHitboxAgainstSpecificEnemy(e, hitbox)
 
                 if (isHit) {
-                    const isCrit = RollCrit()
-                    if(isCrit) damage *= 2
-                    e.damage(damage, isCrit)
+                    e.damage(damage, RollCrit())
                 }
             }
         }

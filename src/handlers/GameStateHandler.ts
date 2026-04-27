@@ -1,23 +1,15 @@
-import { Application, Texture } from "pixi.js"
+import { Application } from "pixi.js"
 import { ROOM_SIZE, RoomSprite } from "../sprites/RoomSprite"
-import { TAnyBehaviorEntry } from "../const/enemyBehaviors"
 import { EnemyHandler } from "./EnemyHandler"
 import { EventHandler, GLOBAL_EVENTS } from "../helpers/eventHandler"
 import { ENEMY_TYPES } from "../const/enemyTypes"
 import { BulletHandler } from "./BulletHandler"
 import { SFX } from "../helpers/soundLoader"
+import { IEnemyConstructorParams } from "../sprites/EnemySprite"
 
-export interface ILevelInputGenericEnemy {
-    x?: number,
-    y?: number,
-    health?: number,
-    baseSpeed?: number,
+export interface ILevelInputGenericEnemy extends IEnemyConstructorParams {
     standardPrice: number,
-    hurtsPlayerOnCollision?: boolean,
-    maxHealth?: number,
-    behaviors?: TAnyBehaviorEntry[],
-    hurtboxSize?: number,
-    texture?: Texture
+    debug?: boolean
 }
 
 type EnemyWave = ILevelInputGenericEnemy[]
@@ -40,6 +32,7 @@ export const LEVEL_COUNT = 4
 export const GameStateHandler = {
     globalLevels: [] as ILevelData[],
     currentLevelIdx: 0,
+    lastClearedLevelIdx: -1,
     currentVariationIdx: 0,
     currentWaveIdx: 0,
     boardEmptyForMs: 0,
@@ -65,19 +58,23 @@ export const GameStateHandler = {
                 if (GameStateHandler.currentLevelIdx + 1 >= GameStateHandler.globalLevels.length) {
                     window.alert("all stages clear")
                 }
-                
+
                 console.log("setting up doors")
                 setTimeout(() => {
                     RoomSprite.updateDoorCount(GameStateHandler.globalLevels[GameStateHandler.currentLevelIdx + 1].variants.length)
                 }, 400);
 
                 /* only play sfx when not first level */
-                if(GameStateHandler.currentLevelIdx > 0) {
-                    SFX.play("stageClear", { volume: 0.3, speed: Math.random() * 0.2 + 0.9 })
+                if (GameStateHandler.currentLevelIdx > GameStateHandler.lastClearedLevelIdx) {
+                    GameStateHandler.lastClearedLevelIdx = GameStateHandler.currentLevelIdx
+                    if (GameStateHandler.currentLevelIdx > 0) {
+                        SFX.play("stageClear", { volume: 0.3, speed: Math.random() * 0.2 + 0.9 })
+                    }
+                    console.log("clear")
+
+                    EventHandler.emit(GLOBAL_EVENTS.STAGE_CLEAR)
+                    BulletHandler.bullets.forEach(b => b.life = b.maxLife)
                 }
-                
-                EventHandler.emit(GLOBAL_EVENTS.STAGE_CLEAR)
-                BulletHandler.bullets.forEach(b => b.life = b.maxLife)
             }
             /* if any waves left, run next wave */
             else {
@@ -150,7 +147,9 @@ export const GameStateHandler = {
                     /* if cant spawn any within credits, stop */
                     if (Object.values(ENEMY_TYPES).filter(e => e().standardPrice + currentCredits <= enemyCreditsForStage).length == 0) break
 
-                    const chosenEnemy = Object.values(ENEMY_TYPES)[Math.floor(Math.random() * Object.keys(ENEMY_TYPES).length)]() as ILevelInputGenericEnemy
+                    const availableEnemies = Object.values(ENEMY_TYPES).filter(e => !e().debug && e().standardPrice + currentCredits <= enemyCreditsForStage)
+                    const chosenIdx = Math.floor(Math.random() * availableEnemies.length)
+                    const chosenEnemy = availableEnemies[chosenIdx]()
 
                     /* roll until enemy small enough found */
                     if (chosenEnemy.standardPrice + currentCredits > enemyCreditsForStage) continue
@@ -258,17 +257,7 @@ export const GameStateHandler = {
                 setTimeout(() => {
                     GameStateHandler.spawningNextWave = false
 
-                    EnemyHandler.spawnEnemy(
-                        enemy.x,
-                        enemy.y,
-                        enemy.health,
-                        enemy.texture,
-                        enemy.behaviors,
-                        enemy.baseSpeed,
-                        enemy.hurtsPlayerOnCollision,
-                        enemy.maxHealth,
-                        enemy.hurtboxSize,
-                    )
+                    EnemyHandler.spawnEnemy(enemy)
                 }, Math.random() * 400)
             })
 

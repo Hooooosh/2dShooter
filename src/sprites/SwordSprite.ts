@@ -30,6 +30,8 @@ export const Sword = {
     SWORD_OFFSET_FROM_PLAYER: 1.6,
     lastSwingAngle: 0,
     hasRanHitboxThisSwing: false,
+    lookingToAngle: 0,
+    isSwingFirstOfHold: true,
 
     _init(app: PIXI.Application) {
         sprite = new PIXI.Sprite(PIXI.Assets.get("sword"))
@@ -62,21 +64,28 @@ export const Sword = {
             Sword.currentSwingCooldown = 0
             Sword.currentSwingSide *= -1
             Sword.hasRanHitboxThisSwing = false
+            Sword.isSwingFirstOfHold = !Sword.isSwinging
             Sword.isSwinging = true
             SFX.play("swordSwing", { volume: 0.2, speed: Math.random() * 0.5 + 0.75 })
         }
     },
-
+    
+    
     _update(ticker: PIXI.Ticker, app: PIXI.Application) {
         if (!sprite) return
+
 
         /* snap to player */
         const playerPos = { x: Player.x, y: Player.y }
         const mousePos = app.renderer.events.pointer.global
+
+        const playerRenderPos = RoomSprite.getRenderPosition(playerPos.x, playerPos.y)        
         const angleToMouse = Math.atan2(
-            mousePos.y - RoomSprite.getRenderPosition(playerPos.x, playerPos.y).y,
-            mousePos.x - RoomSprite.getRenderPosition(playerPos.x, playerPos.y).x
+            mousePos.y - playerRenderPos.y,
+            mousePos.x - playerRenderPos.x
         ) + Math.PI / 2
+
+        Sword.lookingToAngle = angleToMouse
 
         if (Sword.currentSwingCooldown > Sword.SWING_DURATION) {
             Sword.isSwinging = false

@@ -4,6 +4,7 @@ import { IGenericEnemy } from "../sprites/EnemySprite"
 import cubicBezierEase from "../helpers/bezier"
 import { DRAW_ORDERS } from "../const/drawOrders"
 import { SFX } from "../helpers/soundLoader"
+import { EventHandler, GLOBAL_EVENTS } from "../helpers/eventHandler"
 
 let genericParticleContainer: PIXI.Container | null = null
 let damageNumberParticleContainer: PIXI.Container | null = null
@@ -94,10 +95,22 @@ export const ParticleHandler = {
         damageNumberParticleContainer.zIndex = DRAW_ORDERS.DAMAGE_NUMBERS
         floorParticleContainer.zIndex = DRAW_ORDERS.FLOOR_PARTICLES
 
+        EventHandler.on(GLOBAL_EVENTS.DOOR_ENTER, ParticleHandler.removeMiscParticles)
+
         app.stage.addChild(genericParticleContainer)
         app.stage.addChild(damageNumberParticleContainer)
         app.stage.addChild(floorParticleContainer)
         app.ticker.add(this._update)
+    },
+
+    removeMiscParticles() {
+        if (!floorParticleContainer || !damageNumberParticleContainer) return;
+        floorParticleContainer.removeChildren()
+        damageNumberParticleContainer.removeChildren()
+        ParticleHandler.enemyAfterImages = []
+        ParticleHandler.damageNumbers = []
+        ParticleHandler.enemyShootIndicators = []
+        ParticleHandler.enemySpawnIndicators = []
     },
 
     spawnParticle(
@@ -341,8 +354,8 @@ export const ParticleHandler = {
 
             e.sprite.clear()
             e.sprite.circle(0, 0, newRadius)
-            e.sprite.alpha = (newRadiusNormal) * 0.4 + 0.4
-            e.sprite.stroke({ width: (newRadiusNormal) * 5, color: color })
+            e.sprite.alpha = (newRadiusNormal) * 0.4 + 0.6
+            e.sprite.stroke({ width: (newRadiusNormal) * 10, color: color })
 
 
             e.life += ms

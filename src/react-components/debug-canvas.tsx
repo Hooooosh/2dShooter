@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react"
 import { EventHandler, GLOBAL_EVENTS } from "../helpers/eventHandler"
 import { IHitbox } from "../handlers/HitboxHandler"
+import { Vector2 } from "../interfaces/genericInterfaces"
 
 export default function DebugCanvas() {
     const isEnabled = useRef(false)
@@ -36,12 +37,14 @@ export default function DebugCanvas() {
     function enableCanvas() {
         isEnabled.current = true
         EventHandler.on(GLOBAL_EVENTS._DEBUG_DRAW_RECT, drawRotatedRect)
+        EventHandler.on(GLOBAL_EVENTS._DEBUG_DRAW_DOT, drawDot)
         clearCanvas()
     }
 
     function disableCanvas() {
         isEnabled.current = false
         EventHandler.off(GLOBAL_EVENTS._DEBUG_DRAW_RECT, drawRotatedRect)
+        EventHandler.off(GLOBAL_EVENTS._DEBUG_DRAW_DOT, drawDot)
         clearCanvas()
     }
 
@@ -61,13 +64,20 @@ export default function DebugCanvas() {
 
     function drawRotatedRect(hitbox: IHitbox) {
         if (!ctx.current) return
-        clearCanvas(0)
         ctx.current.save()
         ctx.current.translate(hitbox.xCenter, hitbox.yCenter)
         ctx.current.rotate(hitbox.rot ?? 0)
         ctx.current.fillStyle = "#ff0000a0"
         ctx.current.fillRect(-hitbox.width / 2, -hitbox.height / 2, hitbox.width, hitbox.height)
         ctx.current.restore()
+    }
+
+    function drawDot(pos: Vector2) {
+        if (!ctx.current) return
+        ctx.current.fillStyle = "#ff0000"
+        ctx.current.beginPath()
+        ctx.current.arc(pos.x, pos.y, 5, 0, Math.PI * 2)
+        ctx.current.fill()
     }
 
     return (

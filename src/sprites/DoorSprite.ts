@@ -6,8 +6,8 @@ import { ParticleHandler } from "../handlers/ParticleHandler"
 
 const OPEN_ANIM_DURATION = 900
 const CLOSE_ANIM_DURATION = 250
-const DOOR_WIDTH = 100
-const DOOR_HEIGHT = 45
+export const DOOR_WIDTH = 100
+export const DOOR_HEIGHT = 45
 
 interface IDoorSprite {
     index: number,
@@ -98,6 +98,7 @@ export class DoorSprite implements IDoorSprite {
         this.doorLine2.clear()
         this.doorMask.clear()
 
+
         switch (this.index) {
             case 0: /* top */
                 this.doorLine1.x = ROOM_SIZE / 2
@@ -138,21 +139,21 @@ export class DoorSprite implements IDoorSprite {
         )
         this.doorMask.fill(0x000000)
 
-        /* draw door lines */
         this.doorLine1
             .moveTo(-DOOR_WIDTH / 2, -BORDER_GAP)
             .lineTo(-DOOR_WIDTH / 2, -newHeight - BORDER_GAP)
             .lineTo(DOOR_WIDTH / 2, -newHeight - BORDER_GAP)
             .lineTo(DOOR_WIDTH / 2, -BORDER_GAP)
+            .lineTo(DOOR_WIDTH / 2 + BORDER_GAP, -BORDER_GAP)
         this.doorLine1.stroke({ width: BORDER_STYLE_OUTER.width, color: BORDER_STYLE_OUTER.color })
 
         this.doorLine2
             .moveTo(-DOOR_WIDTH / 2, 0)
             .lineTo(-DOOR_WIDTH / 2 + BORDER_GAP, 0)
             .lineTo(-DOOR_WIDTH / 2 + BORDER_GAP, -newHeight)
-            .lineTo(DOOR_WIDTH / 2 - BORDER_GAP, -newHeight)
-            .lineTo(DOOR_WIDTH / 2 - BORDER_GAP, 0)
-            .lineTo(DOOR_WIDTH / 2, 0)
+            .lineTo(1 + DOOR_WIDTH / 2 - BORDER_GAP, -newHeight)
+            .lineTo(1 + DOOR_WIDTH / 2 - BORDER_GAP, 0)
+            .lineTo(1 + DOOR_WIDTH / 2, 0)
         this.doorLine2.stroke({ width: BORDER_STYLE_INNER.width, color: BORDER_STYLE_INNER.color })
     }
 

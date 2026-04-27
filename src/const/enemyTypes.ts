@@ -4,12 +4,12 @@ import { ILevelInputGenericEnemy } from "../handlers/GameStateHandler"
 
 
 const _TYPES = {
+    DUMMY: "DUMMY",
     BASIC_SHOOTER: "BASIC_SHOOTER",
     TURRET_FAST: "TURRET_FAST",
     SNIPER: "SNIPER",
     TURRET_CIRCLE: "TURRET_CIRCLE",
-    SHOTGUN: "SHOTGUN", 
-    KAMIKAZE: "KAMIKAZE",
+    SHOTGUN: "SHOTGUN",
     DASH: "DASH",
 } as const
 
@@ -45,6 +45,15 @@ export type TEnemyType = keyof typeof _TYPES
 /* behaviors in order of overwriting data eg rotation */
 
 export const ENEMY_TYPES: Record<TEnemyType, () => ILevelInputGenericEnemy> = {
+    [_TYPES.DUMMY]: () => {
+        return {
+            texture: Assets.get("kamikaze"),
+            standardPrice: 999999999,
+            health: 999,
+            slipperiness: 0,
+            debug: true,
+        }
+    },
     [_TYPES.BASIC_SHOOTER]: () => {
         const followDist = Math.random() * 50 + 150
         return {
@@ -57,7 +66,7 @@ export const ENEMY_TYPES: Record<TEnemyType, () => ILevelInputGenericEnemy> = {
                 GET_ENEMY_BEHAVIOR.followPlayerBehavior(followDist),
                 GET_ENEMY_BEHAVIOR.lookAtPlayerBehavior(),
             ]
-        }
+        } as ILevelInputGenericEnemy
     },
     [_TYPES.TURRET_FAST]: () => {
         return {
@@ -77,10 +86,10 @@ export const ENEMY_TYPES: Record<TEnemyType, () => ILevelInputGenericEnemy> = {
         return {
             texture: Assets.get("sniper"),
             standardPrice: 50,
-            health: 2,
+            health: 4,
             baseSpeed: 0.75,
             behaviors: [
-                GET_ENEMY_BEHAVIOR.shootPeriodicallyBehavior(4500, 15),
+                GET_ENEMY_BEHAVIOR.shootPeriodicallyBehavior(2500, 17),
                 GET_ENEMY_BEHAVIOR.followPlayerBehavior(followDist),
                 GET_ENEMY_BEHAVIOR.lookAtPlayerBehavior(),
             ]
@@ -92,7 +101,7 @@ export const ENEMY_TYPES: Record<TEnemyType, () => ILevelInputGenericEnemy> = {
             standardPrice: 40,
             health: 3,
             behaviors: [
-                GET_ENEMY_BEHAVIOR.shootBurstTowardPlayer(3000, 3, 360, 16, 0.98, true),
+                GET_ENEMY_BEHAVIOR.shootBurstTowardPlayer(3000, 3, 360, 8, 1, true),
             ],
             hurtsPlayerOnCollision: false,
         }
@@ -111,27 +120,18 @@ export const ENEMY_TYPES: Record<TEnemyType, () => ILevelInputGenericEnemy> = {
             ]
         }
     },
-    [_TYPES.KAMIKAZE]: () => {
-        return {
-            texture: Assets.get("kamikaze"),
-            standardPrice: 999999999,
-            health: 1,
-            baseSpeed: 1.5,
-            behaviors: [
-            ]
-        }
-    },
     [_TYPES.DASH]: () => {
         const enemy = {
             texture: Assets.get("dash"),
             standardPrice: 60,
-            health: 3,
+            health: 30,
             baseSpeed: 0,
+            slipperiness: 0.7,
             behaviors: [
                 GET_ENEMY_BEHAVIOR.lookAtPlayerBehavior(1),
-                GET_ENEMY_BEHAVIOR.dashBehavior(undefined, 20),
-            ]
-        }
+                GET_ENEMY_BEHAVIOR.dashBehavior(undefined, 4),
+            ],
+        } as ILevelInputGenericEnemy
         return enemy
     }
 }

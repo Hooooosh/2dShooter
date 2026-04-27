@@ -9,14 +9,26 @@ let bulletContainer: PIXI.Container | null = null
 interface IBullet {
     x: number,
     y: number,
-    vx: number,
-    vy: number,
+    angle: number,
+    initSpeed: number,
     radius: number,
     life: number,
+    lifeFrames: number,
     maxLife: number,
     markedForDeletion?: boolean,
     dampFactor: number,
     sprite: PIXI.Graphics
+}
+
+interface IBulletConstructorParams {
+    x: number,
+    y: number,
+    angle?: number,
+    speed?: number,
+    maxLife?: number,
+    dampFactor?: number,
+    radius?: number,
+    sprite?: PIXI.Graphics
 }
 
 const DESPAWN_TIME = 300
@@ -32,34 +44,35 @@ export const BulletHandler = {
         app.ticker.add(this._update)
     },
 
-    spawnBullet(x: number, y: number, vx?: number, vy?: number, maxLife?: number, dampFactor?: number, radius?: number, sprite?: PIXI.Graphics) {
-        const _fallbackSprite =
-            sprite ??
+    spawnBullet(params: IBulletConstructorParams) {
+        const chosenSprite =
+            params.sprite ??
             new PIXI.Graphics()
-                .circle(0, 0, radius ?? 10)
+                .circle(0, 0, params.radius ?? 10)
                 .fill(0x990000)
                 .setStrokeStyle({ width: 3, color: 0xee0000 })
                 .stroke()
 
-        const particle: IBullet = {
-            x: x,
-            y: y,
-            vx: vx ?? 0,
-            vy: vy ?? 0,
-            radius: radius ?? 10,
+        const b: IBullet = {
+            x: params.x,
+            y: params.y,
+            angle: params.angle ?? 0,
+            initSpeed: params.speed ?? 0,
+            radius: params.radius ?? 10,
             life: 0,
-            maxLife: maxLife ?? 5000,
-            dampFactor: dampFactor ?? 0.995,
-            sprite: sprite ?? _fallbackSprite
+            lifeFrames: 0,
+            maxLife: params.maxLife ?? 5000,
+            dampFactor: params.dampFactor ?? 0.995,
+            sprite: chosenSprite
         }
 
         /* init into render position so first frame is correct */
-        const renderPos = RoomSprite.getRenderPosition(x, y)
-        particle.sprite.x = renderPos.x
-        particle.sprite.y = renderPos.y
+        const renderPos = RoomSprite.getRenderPosition(params.x, params.y)
+        b.sprite.x = renderPos.x
+        b.sprite.y = renderPos.y
 
-        bulletContainer?.addChild(particle.sprite)
-        BulletHandler.bullets.push(particle)
+        bulletContainer?.addChild(b.sprite)
+        BulletHandler.bullets.push(b)
 
         /* play sfx */
         SFX.play("enemyShoot", { volume: 0.5, speed: Math.random() * 2 + 1.5 })
@@ -88,6 +101,7 @@ export const BulletHandler = {
             const b = BulletHandler.bullets[i]
 
             b.life += ms
+            b.lifeFrames += ticker.deltaTime
 
             /* check if bullet finished disappear anim */
             if (b.life >= b.maxLife + DESPAWN_TIME) {
@@ -132,17 +146,19 @@ export const BulletHandler = {
             b.sprite.x = renderPos.x
             b.sprite.y = renderPos.y
 
-            /* physics */
-            b.x += b.vx
-            b.y += b.vy
 
-            const speed = Math.sqrt(b.vx * b.vx + b.vy * b.vy)
-            b.sprite.rotation = Math.atan2(b.vy, b.vx)
+            const newSpeed = b.initSpeed * Math.pow(b.dampFactor, b.lifeFrames)
+            console.log(b.angle)
+
+            /* physics */
+            b.x += Math.cos(b.angle) * newSpeed
+            b.y += Math.sin(b.angle) * newSpeed
 
             /* normal scale */
-            const scaleStretch = Math.max(Math.min(1 + speed / 20, 2), 1)
+            const scaleStretch = Math.max(Math.min(1 + newSpeed / 20, 2), 1)
             const scaleSquish = Math.max(1 / scaleStretch, 0.4)
             b.sprite.scale.set(scaleStretch, scaleSquish)
+            b.sprite.rotation = b.angle
 
             /* + decaying scale */
             if (b.life >= b.maxLife) {
@@ -152,8 +168,6 @@ export const BulletHandler = {
                 b.sprite.alpha = Math.max(1 - decayProgress, 0)
             }
 
-            b.vx *= b.dampFactor
-            b.vy *= b.dampFactor
         }
     },
 }

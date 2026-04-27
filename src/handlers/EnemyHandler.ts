@@ -1,8 +1,7 @@
 import * as PIXI from "pixi.js"
-import { GenericEnemy, IGenericEnemy } from "../sprites/EnemySprite"
-import { TAnyBehaviorEntry } from "../const/enemyBehaviors"
+import { GenericEnemy, IEnemyConstructorParams, IGenericEnemy } from "../sprites/EnemySprite"
 import { DRAW_ORDERS } from "../const/drawOrders"
-import { ROOM_SIZE, RoomSprite } from "../sprites/RoomSprite"
+import { RoomSprite } from "../sprites/RoomSprite"
 import { EventHandler, GLOBAL_EVENTS } from "../helpers/eventHandler"
 import { ParticleHandler } from "./ParticleHandler"
 import getSpritePosClampedToBounds from "../helpers/getSpritePosClampedToBounds"
@@ -26,34 +25,14 @@ export const EnemyHandler = {
         app.ticker.add(this.update)
     },
 
-    spawnEnemy(
-        x?: number,
-        y?: number,
-        health?: number,
-        texture?: PIXI.Texture,
-        behaviors?: TAnyBehaviorEntry[],
-        baseSpeed?: number,
-        hurtsPlayerOnCollision?: boolean,
-        maxHealth?: number,
-        hurtboxSize?: number,
-    ) {
-        const enemy = new GenericEnemy(
-            x ?? Math.random() * ROOM_SIZE,
-            y ?? Math.random() * ROOM_SIZE,
-            health = health ?? maxHealth,
-            texture ?? PIXI.Assets.get("enemy-placeholder"),
-            behaviors = behaviors?.map((e) => ({ behavior: e.behavior, config: e.config ?? {} })),
-            baseSpeed,
-            hurtsPlayerOnCollision,
-            maxHealth,
-            hurtboxSize
-        )
+    spawnEnemy(params: IEnemyConstructorParams) {
+        const enemy = new GenericEnemy(params)
         const SPAWN_TIMER = 1100
-        
-        const clamped = getSpritePosClampedToBounds({x: enemy.x, y: enemy.y}, enemy.sprite.width)
+
+        const clamped = getSpritePosClampedToBounds({ x: enemy.x, y: enemy.y }, enemy.sprite.width)
         enemy.x = clamped.x
         enemy.y = clamped.y
-        
+
         ParticleHandler.spawnEnemySpawnIndicator(enemy.x, enemy.y, enemy.sprite.width + 20, SPAWN_TIMER)
         EnemyHandler.waitingToSpawn.push({ enemy, timeUntilSpawnMs: SPAWN_TIMER })
 

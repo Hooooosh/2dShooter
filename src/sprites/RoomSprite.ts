@@ -125,7 +125,7 @@ export const RoomSprite = {
     if (RoomSprite.enterDoorCooldown > 0) return;
     /* check distances for doors */
     for (let idx = 0; idx < RoomSprite.openDoorsCount; idx++) {
-      if (Distance({ x: Player.x, y: Player.y }, _DOOR_POSITIONS[idx]) < Player.SPRITE_SIZE * 0.7) {
+      if (Distance({ x: Player.x, y: Player.y }, _DOOR_POSITIONS[idx]) < Player.SPRITE_SIZE * 0.9) {
         /* emit enter door event */
         EventHandler.emit(GLOBAL_EVENTS.DOOR_ENTER, { doorIdx: idx })
         RoomSprite._closeDoors()

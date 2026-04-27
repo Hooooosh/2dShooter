@@ -1,7 +1,7 @@
 import * as PIXI from "pixi.js"
 import { TAnyBehaviorEntry } from "../const/enemyBehaviors";
 import getSpritePosClampedToBounds from "../helpers/getSpritePosClampedToBounds";
-import { RoomSprite } from "./RoomSprite";
+import { ROOM_SIZE, RoomSprite } from "./RoomSprite";
 import { ParticleHandler } from "../handlers/ParticleHandler";
 import { EnemyHandler } from "../handlers/EnemyHandler";
 import { Player } from "./PlayerSprite";
@@ -14,71 +14,116 @@ await PIXI.Assets.load([
     }
 ])
 
+export interface IEnemyConstructorParams {
+    x?: number,
+    y?: number,
+    vx?: number,
+    vy?: number,
+    slipperiness?: number,
+    health?: number,
+    maxHealth?: number,
+    baseSpeed?: number,
+    hurtboxSize?: number,
+    hurtsPlayerOnCollision?: boolean,
+    isCritVulnerable?: boolean
+    behaviors?: TAnyBehaviorEntry[],
+    texture?: PIXI.Texture,
+}
+
 export interface IGenericEnemy {
     x: number
     y: number
+    vx: number
+    vy: number
+    slipperiness: number
     health: number
     baseSpeed: number
     maxHealth: number
     aliveFor: number
     hurtboxSize: number
+    iframesMs: number
     markedForDeletion: boolean
-    hurtsPlayerOnCollision?: boolean
+    hurtsPlayerOnCollision: boolean
+    isCritVulnerable: boolean
 
     sprite: PIXI.Sprite | undefined
     behaviors: TAnyBehaviorEntry[]
     _update(ticker: PIXI.Ticker): void
-    damage(amount?: number, wasCrit?: boolean): void
+    damage(amount?: number, wasCrit?: boolean, ignoreInvulnerability?: boolean): void
     isInvulnerable(): boolean
     instakill(): void
+    getSlippingSpeed(): number
 }
+
 
 export class GenericEnemy implements IGenericEnemy {
     x = 0;
     y = 0;
+    vx = 0;
+    vy = 0;
+    slipperiness = 0;
     health = 1;
     baseSpeed = 3;
     aliveFor = 0;
     maxHealth = 1;
     hurtboxSize = 0;
-    currentIframesMs = 0;
+    iframesMs = 0;
     markedForDeletion = false;
     hurtsPlayerOnCollision = true;
+    isCritVulnerable = false;
 
     sprite = new PIXI.Sprite();
     behaviors = [] as TAnyBehaviorEntry[];
 
-    constructor(x: number, y: number, health?: number, texture?: PIXI.Texture, behaviors?: TAnyBehaviorEntry[], baseSpeed?: number, hurtsPlayerOnCollision?: boolean, maxHealth?: number, hurtboxSize?: number) {
-        this.x = x;
-        this.y = y;
-        this.health = health ?? maxHealth ?? 1;
-        this.maxHealth = maxHealth ?? 1;
-        this.baseSpeed = baseSpeed ?? 3;
-        this.hurtsPlayerOnCollision = hurtsPlayerOnCollision ?? true;
+    constructor(params: IEnemyConstructorParams) {
+        this.x = params.x ?? Math.random() * ROOM_SIZE;
+        this.y = params.y ?? Math.random() * ROOM_SIZE;
+        this.vx = params.vx ?? 0;
+        this.vy = params.vy ?? 0;
+        this.slipperiness = params.slipperiness ?? 0;
+        this.health = params.health ?? params.maxHealth ?? 1;
+        this.maxHealth = params.maxHealth ?? 1;
+        this.baseSpeed = params.baseSpeed ?? 3;
+        this.hurtsPlayerOnCollision = params.hurtsPlayerOnCollision ?? true;
+        this.isCritVulnerable = params.isCritVulnerable ?? false;
         this.aliveFor = 0;
-        this.sprite = new PIXI.Sprite(texture ?? PIXI.Assets.get("enemy-placeholder"))
-        this.hurtboxSize = hurtboxSize ?? this.sprite.width;
+        this.sprite = new PIXI.Sprite(params.texture ?? PIXI.Assets.get("enemy-placeholder"))
+        this.hurtboxSize = params.hurtboxSize ?? this.sprite.width;
 
         this.sprite.anchor.set(0.5)
-        this.sprite.x = x
-        this.sprite.y = y
+        this.sprite.x = this.x
+        this.sprite.y = this.y
 
-        this.behaviors = behaviors ?? []
+        this.behaviors = params.behaviors ?? []
 
         console.log("created enemy")
     }
 
     isInvulnerable() {
-        return this.currentIframesMs > 0
+        return this.iframesMs > 0
     }
 
-    damage(amount = 1, wasCrit = false) {
-        if (this.isInvulnerable()) return
+    getSlippingSpeed() {
+        return Math.sqrt(this.vx * this.vx + this.vy * this.vy) * this.slipperiness
+    }
 
-        this.health -= amount
+    damage(baseAmount = 1, crit = false, ignoreInvulnerability = false) {
+        if (this.isInvulnerable() && !ignoreInvulnerability) return
+        if (!crit && this.isCritVulnerable) {
+            crit = true
+        }
 
-        ParticleHandler.spawnDamageNumber(this.x, this.y, amount, wasCrit)
+        if(crit) {
+            baseAmount *= 2
+        }
+        this.health -= baseAmount
 
+        ParticleHandler.spawnDamageNumber(this.x, this.y, baseAmount, crit)
+
+        this._playHitEffects(baseAmount, crit)
+    }
+
+    _playHitEffects(amount = 1, wasCrit = false) {
         if (this.health <= 0) {
             /* die */
             if (Math.random() < 0.5)
@@ -110,18 +155,28 @@ export class GenericEnemy implements IGenericEnemy {
     _update(ticker: PIXI.Ticker) {
         if (!this.sprite || this.markedForDeletion) return
 
+        /* upd iframes */
+        if (this.iframesMs > 0) {
+            this.iframesMs -= ticker.deltaMS
+        }
+
         /* update alivetime */
         this.aliveFor += ticker.deltaMS
 
-        const pos = { x: this.x, y: this.y }
+
+        /* update speed */
+        this.vx *= this.slipperiness
+        this.vy *= this.slipperiness
+
+        const posWithSpeed = { x: this.x + this.vx, y: this.y + this.vy }
 
         /* clamp pos to bounds */
-        const clampedPos = getSpritePosClampedToBounds(pos, this.sprite.width)
+        const clampedPos = getSpritePosClampedToBounds(posWithSpeed, this.sprite.width)
         this.x = clampedPos.x
         this.y = clampedPos.y
 
         /* get render pos */
-        const renderPos = RoomSprite.getRenderPosition(pos.x, pos.y)
+        const renderPos = RoomSprite.getRenderPosition(posWithSpeed.x, posWithSpeed.y)
         this.sprite.x = renderPos.x
         this.sprite.y = renderPos.y
 

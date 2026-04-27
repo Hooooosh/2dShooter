@@ -6,6 +6,8 @@ import { Player } from "../sprites/PlayerSprite";
 import { degToRad, radToDeg } from "../helpers/angle";
 import { ROOM_SIZE } from "../sprites/RoomSprite";
 import { SFX } from "../helpers/soundLoader";
+import { Sword } from "../sprites/SwordSprite";
+import { dotProduct, scaleVector, subtractVectors } from "../helpers/vector";
 
 export type TEnemyBehavior<TBehaviorConfig> = (
     enemy: IGenericEnemy,
@@ -46,7 +48,7 @@ export type TKamikazeBehavior = {
 export type TDashBehavior = {
     dashCooldown?: number,
     dashSpeed?: number,
-    dashDecay?: number
+    baseSlipperiness?: number
 }
 
 export type TLookAtPlayerBehavior = {
@@ -109,13 +111,13 @@ export const ENEMY_BEHAVIORS = {
         config._canPlayWarning ??= true
         config.shootInterval ??= 1700
         config.bulletSpeed ??= 3.5
-        config._currentTime ??= 0
+        config._currentTime ??= config.shootInterval / 2
         config._currentTime += ticker.deltaMS
 
         /* play shoot warning particle */
         const WARNING_DURATION = Math.max(Math.min(1500, config.shootInterval * 0.75), 500)
         if (config._currentTime >= config.shootInterval - WARNING_DURATION && config._canPlayWarning) {
-            ParticleHandler.spawnEnemyShootIndicator(enemy, WARNING_DURATION, 75)
+            ParticleHandler.spawnEnemyShootIndicator(enemy, (config.shootInterval - config._currentTime), 75)
             config._canPlayWarning = false
         }
 
@@ -124,12 +126,12 @@ export const ENEMY_BEHAVIORS = {
             config._currentTime = 0
             const playerPos = { x: Player.x, y: Player.y }
             const angleToPlayer = Math.atan2(playerPos.y - enemy.y, playerPos.x - enemy.x)
-            BulletHandler.spawnBullet(
-                enemy.x,
-                enemy.y,
-                Math.cos(angleToPlayer) * (config.bulletSpeed ?? 2),
-                Math.sin(angleToPlayer) * (config.bulletSpeed ?? 2),
-            )
+            BulletHandler.spawnBullet({
+                "x": enemy.x,
+                "y": enemy.y,
+                "speed": config.bulletSpeed,
+                "angle": angleToPlayer
+            })
             config._canPlayWarning = true
         }
     },
@@ -143,7 +145,7 @@ export const ENEMY_BEHAVIORS = {
         config.bulletSpeed ??= 3.5
         config.bulletSpread ??= 30
         config.bulletCount ??= 5
-        config._currentTime ??= 0
+        config._currentTime ??= config.shootInterval / 2
         config._currentTime += ticker.deltaMS
         const BURST_DURATION = 300
 
@@ -152,7 +154,7 @@ export const ENEMY_BEHAVIORS = {
         /* play shoot warning particle */
         const WARNING_DURATION = Math.max(Math.min(1500, config.shootInterval * 0.75), 500)
         if (config._currentTime >= config.shootInterval - WARNING_DURATION && config._canPlayWarning) {
-            ParticleHandler.spawnEnemyShootIndicator(enemy, WARNING_DURATION, 75)
+            ParticleHandler.spawnEnemyShootIndicator(enemy, (config.shootInterval - config._currentTime), 75)
             config._canPlayWarning = false
         }
 
@@ -164,14 +166,13 @@ export const ENEMY_BEHAVIORS = {
             const spreadRad = degToRad(config.bulletSpread)
             /* if only one bullet, shoot normally */
             if (config.bulletCount == 1) {
-                BulletHandler.spawnBullet(
-                    enemy.x,
-                    enemy.y,
-                    Math.cos(angleToPlayer) * config.bulletSpeed,
-                    Math.sin(angleToPlayer) * config.bulletSpeed,
-                    undefined,
-                    config.bulletDecay
-                )
+                BulletHandler.spawnBullet({
+                    "x": enemy.x,
+                    "y": enemy.y,
+                    "speed": config.bulletSpeed,
+                    "angle": angleToPlayer,
+                    "dampFactor": config.bulletDecay
+                })
             }
             /* else, shotgun */
             else {
@@ -186,14 +187,13 @@ export const ENEMY_BEHAVIORS = {
                         headingAngle = midAngle + side * Math.ceil(i / 2) * (spreadRad / (config.bulletCount - 1))
                     }
                     setTimeout(() => {
-                        BulletHandler.spawnBullet(
-                            enemy.x,
-                            enemy.y,
-                            Math.cos(headingAngle) * config.bulletSpeed!,
-                            Math.sin(headingAngle) * config.bulletSpeed!,
-                            undefined,
-                            config.bulletDecay
-                        )
+                        BulletHandler.spawnBullet({
+                            "x": enemy.x,
+                            "y": enemy.y,
+                            "speed": config.bulletSpeed,
+                            "angle": headingAngle,
+                            "dampFactor": config.bulletDecay
+                        })
                         ParticleHandler.spawnParticle(
                             enemy.x,
                             enemy.y,
@@ -273,59 +273,125 @@ export const ENEMY_BEHAVIORS = {
         enemy.y += config._vy * ticker.deltaTime
     },
     dashBehavior: (enemy: IGenericEnemy, ticker: Ticker,
-        config: TDashBehavior & { _vx?: number, _vy?: number, _canPlayWarning?: boolean, _currentTime?: number, _afterImageTime?: number }
+        config: TDashBehavior & { baseSlipperiness?: number, _canPlayWarning?: boolean, _currentTime?: number, _afterImageTime?: number, _prevHealth?: number, _parryTimerMs?: number }
     ) => {
         if (!Player.getSprite() || !enemy.sprite) return
 
-        config._vx ??= 0
-        config._vy ??= 0
         config.dashCooldown ??= 2500
         config.dashSpeed ??= 5
-        config.dashDecay ??= 0.985
-        config._currentTime ??= 0
+        config.baseSlipperiness ??= 0.98
+        config._currentTime ??= config.dashCooldown / 2
         config._afterImageTime ??= 0
         config._canPlayWarning ??= true
+        config._parryTimerMs ??= 0
+        config._prevHealth ??= enemy.health
+        
+
+        const PARRY_WINDOW = 1500
 
         const AFTERIMAGE_INTERVAL = 250
 
-        const speedSq = config._vx * config._vx + config._vy * config._vy
+        const currSpeed = enemy.getSlippingSpeed()
 
-        if (config._vx == 0 && config._vy == 0) {
+        if (currSpeed == 0) {
             /* only count cooldown when stationary */
+            enemy.hurtsPlayerOnCollision = true
+            enemy.slipperiness = config.baseSlipperiness
             config._currentTime += ticker.deltaMS
         }
         else {
-            /* if moving */
-            /* apply decay to speed */
-            config._vx *= config.dashDecay
-            config._vy *= config.dashDecay
+            /* if dashing */
 
-            if (speedSq < 3) {
-                config._vx *= 0.97
-                config._vy *= 0.97
+            /* bypass normal hitbox, handle parry here */
+            enemy.hurtsPlayerOnCollision = false
+
+            /* TODO KISZEDNI */
+            /* enemy.slipperiness = config.baseSlipperiness */
+            enemy.slipperiness = 1
+
+            /* active parry window */
+            if (config._parryTimerMs > 0) {
+                config._parryTimerMs -= ticker.deltaMS
+
+                /* timer ticked down, failed parry, damage player */
+                if (config._parryTimerMs < 0) {
+                    Player.damage()
+                }
             }
 
-            if (speedSq < 0.5) {
-                config._vx = 0
-                config._vy = 0
+            if (currSpeed < 3) {
+                enemy.slipperiness = 0.96
+                enemy.isCritVulnerable = false
+            }
+            /* if fast enough, vulnerable */
+            else {
+                enemy.isCritVulnerable = true
+            }
+
+            /* if slow enough, stop */
+            if (currSpeed < 0.5) {
+                enemy.slipperiness = 0
+                enemy.isCritVulnerable = false
             }
             else {
                 /* update facing angle */
-                const headingAngle = Math.atan2(config._vy, config._vx)
+                const headingAngle = Math.atan2(enemy.vy, enemy.vx)
                 enemy.sprite.rotation = headingAngle - Math.PI / 2
             }
+
+            const currentSpeed = enemy.getSlippingSpeed()
 
             /* spawn afterimage if can */
             config._afterImageTime += ticker.deltaTime * ticker.deltaMS
             if (Math.floor(config._afterImageTime / AFTERIMAGE_INTERVAL) < Math.floor((config._afterImageTime + ticker.deltaTime * ticker.deltaMS) / AFTERIMAGE_INTERVAL)) {
-                ParticleHandler.spawnEnemyAfterImage(enemy, 800, Math.min(0.7, speedSq / 15), false)
+                ParticleHandler.spawnEnemyAfterImage(enemy, 800, Math.min(0.7, currentSpeed / 15), false)
+            }
+
+            /* parry handler */
+            /* if close to player, open parry window */
+            const distToPlayerSq = (Player.x - enemy.x) ** 2 + (Player.y - enemy.y) ** 2
+            if (distToPlayerSq < 100 ** 2 && config._parryTimerMs <= 0 && enemy.iframesMs <= 0) {
+                enemy.iframesMs = 400
+                if (config._parryTimerMs <= 0) {
+                    config._parryTimerMs = PARRY_WINDOW
+                }
+            }
+
+            
+            /* parry success */
+            if (Sword.isSwinging && Sword.isSwingFirstOfHold && config._parryTimerMs > 0) {
+                enemy.damage(Player.baseDmg, true)
+                config._parryTimerMs = 0
+                
+                /* reflect by hit angle */
+                
+                /* v - 2f*(v•f) */
+                const angleV = Math.atan2(enemy.vy, enemy.vx) - Math.PI
+                const angleF = Sword.lookingToAngle
+
+                console.log(angleV, angleF)
+
+                const v = { x: Math.cos(angleV), y: Math.sin(angleV) }
+                const f = { x: Math.cos(angleF), y: Math.sin(angleF) }
+
+                const res = subtractVectors(v, scaleVector(f, 2 * dotProduct(v, f)))
+
+                console.log(res)
+
+                enemy.vx = res.x * currentSpeed * 1
+                enemy.vy = res.y * currentSpeed * 1
+
+                /* can hurt player normally again */
+                setTimeout(() => {
+                    enemy.hurtsPlayerOnCollision = true
+                }, 300);
             }
         }
 
         /* play dash warning particle */
-        const WARNING_DURATION = 2000
+        const WARNING_DURATION = 1500
         if (config._currentTime >= config.dashCooldown - WARNING_DURATION && config._canPlayWarning) {
-            ParticleHandler.spawnEnemyShootIndicator(enemy, WARNING_DURATION, 100)
+            ParticleHandler.spawnEnemyShootIndicator(enemy, (config.dashCooldown - config._currentTime), 75)
             config._canPlayWarning = false
         }
 
@@ -335,8 +401,9 @@ export const ENEMY_BEHAVIORS = {
             const playerPos = { x: Player.x, y: Player.y }
             const angleToPlayer = Math.atan2(playerPos.y - enemy.y, playerPos.x - enemy.x)
             const newDashSpeed = config.dashSpeed * (0.7 + Math.random() * 0.6)
-            config._vx = Math.cos(angleToPlayer) * newDashSpeed
-            config._vy = Math.sin(angleToPlayer) * newDashSpeed
+            enemy.slipperiness = config.baseSlipperiness
+            enemy.vx = Math.cos(angleToPlayer) * newDashSpeed
+            enemy.vy = Math.sin(angleToPlayer) * newDashSpeed
             config._canPlayWarning = true
 
             /* sfx */
@@ -344,23 +411,25 @@ export const ENEMY_BEHAVIORS = {
         }
 
         /* bounce off walls */
-        const nextX = enemy.x + config._vx * ticker.deltaTime
-        const nextY = enemy.y + config._vy * ticker.deltaTime
+        const nextX = enemy.x + enemy.vx * ticker.deltaTime
+        const nextY = enemy.y + enemy.vy * ticker.deltaTime
         const bounds = enemy.sprite.width / 2
         if (nextX < bounds || nextX > ROOM_SIZE - bounds) {
-            config._vx *= -1
+            enemy.vx *= -1
             enemy.x = Math.max(bounds, Math.min(ROOM_SIZE - bounds, nextX))
         }
         else {
             enemy.x = nextX
         }
         if (nextY < bounds || nextY > ROOM_SIZE - bounds) {
-            config._vy *= -1
+            enemy.vy *= -1
             enemy.y = Math.max(bounds, Math.min(ROOM_SIZE - bounds, nextY))
         }
         else {
             enemy.y = nextY
         }
+
+        config._prevHealth = enemy.health
     },
     lookAtPlayerBehavior: (enemy: IGenericEnemy, _ticker: Ticker,
         config: TLookAtPlayerBehavior & { _currentAngle?: number }
@@ -406,9 +475,9 @@ export const GET_ENEMY_BEHAVIOR = {
         behavior: ENEMY_BEHAVIORS.kamikazeBehavior,
         config: { acceleration } as TKamikazeBehavior
     } as TAnyBehaviorEntry),
-    dashBehavior: (dashCooldown?: number, dashSpeed?: number, dashDecay?: number) => ({
+    dashBehavior: (dashCooldown?: number, dashSpeed?: number, baseSlipperiness?: number) => ({
         behavior: ENEMY_BEHAVIORS.dashBehavior,
-        config: { dashCooldown, dashSpeed, dashDecay } as TDashBehavior
+        config: { dashCooldown, dashSpeed, baseSlipperiness } as TDashBehavior
     } as TAnyBehaviorEntry),
     lookAtPlayerBehavior: (intensity?: number, condition?: () => boolean) => ({
         behavior: ENEMY_BEHAVIORS.lookAtPlayerBehavior,
