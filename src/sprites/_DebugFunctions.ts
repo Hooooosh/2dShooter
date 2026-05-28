@@ -32,7 +32,7 @@ export const _DebugFunctions = {
                 /* TEST BULLETS */
                 case "KeyQ":
                     for (let i = 0; i < 20; i++) {
-                        BulletHandler.spawnBullet(50 + i * 20, 50, 0, i * 2, 4000)
+                        BulletHandler.spawnBullet({ x: 50 + i * 20, y: 50, angle: 0, speed: i * 2, maxLife: 4000 })
                     }
                     break;
 
@@ -65,7 +65,7 @@ export const _DebugFunctions = {
             const enemy = ENEMY_TYPES.DUMMY()
             enemy.x = x
             enemy.y = y
-            enemy.health = invincible ? 9999999 : 1
+            enemy.health = invincible ? 99999 : 1
             EnemyHandler.spawnEnemy(enemy)
         }
 

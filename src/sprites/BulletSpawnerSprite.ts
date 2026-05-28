@@ -21,7 +21,7 @@ export const BulletSpawner: IBulletSpawner = {
 
     _init(app: PIXI.Application) {
         app.ticker.add(BulletSpawner._update)
-        BulletHandler.spawnBullet(BulletSpawner.x, BulletSpawner.y, 0, 0, 99999, 0)
+        BulletHandler.spawnBullet({ x: BulletSpawner.x, y: BulletSpawner.y, angle: 0, maxLife: 5000, speed: 2 })
     },
 
     _update(ticker: PIXI.Ticker) {
@@ -34,7 +34,7 @@ export const BulletSpawner: IBulletSpawner = {
             BulletSpawner.currentInterval = BulletSpawner.INTERVAL
             const vx = Math.cos(BulletSpawner.lastAngle) * 2
             const vy = Math.sin(BulletSpawner.lastAngle) * 2
-            BulletHandler.spawnBullet(BulletSpawner.x, BulletSpawner.y, vx, vy, 10000, 0.995)
+            BulletHandler.spawnBullet({ x: BulletSpawner.x, y: BulletSpawner.y, angle: Math.atan2(vy, vx), maxLife: 10000, speed: 2 })
         }
     },
 }
