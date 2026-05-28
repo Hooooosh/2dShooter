@@ -174,12 +174,21 @@ export const Player: IPlayer = {
         if (Player.msSinceLastDash < Player.DASH_DURATION) return
         if (Player.currentStamina < 1) return
         if (Player.lastMoveVector.x === 0 && Player.lastMoveVector.y === 0) return
-        SFX.play("playerDash", { volume: 0.3, speed: Math.random() * 0.5 + 0.75 })
         Player.lastDashedFrom = { x: Player.x, y: Player.y }
         Player.lastDashVector = normalizeVector(vector)
         Player.msSinceLastDash = 0
         Player.currentStamina -= 1
         Player.currentIframesMs = Player.DASH_DURATION + 50 /* 50ms extra leniency */
+
+        for (let i = 0; i < 5; i++) {
+            const newVector = {
+                x: (-Player.lastDashVector.x + (Math.random() - 0.5) * 1.7) * 1,
+                y: (-Player.lastDashVector.y + (Math.random() - 0.5) * 1.7) * 1
+            }
+            const speed = 4
+            ParticleHandler.spawnParticle(Player.x, Player.y, newVector.x * speed, newVector.y * speed, Math.random() * 250 + 250, undefined, 0.2, 0.97)
+        }
+        SFX.play("playerDash", { volume: 0.3, speed: Math.random() * 0.5 + 0.75 })
         EventHandler.emit(GLOBAL_EVENTS.STAMINA_CHANGED)
     },
 
@@ -222,12 +231,12 @@ export const Player: IPlayer = {
         else {
             /* dashing calc */
             Player.msSinceLastDash += ticker.deltaMS
-            const _newLinearProgress = Player.msSinceLastDash / Player.DASH_DURATION
+            const _newLinearProgress = Math.min(Math.max(Player.msSinceLastDash / Player.DASH_DURATION, 0), 1)
             const _newInterpolProgress = cubicBezierEase(_newLinearProgress, 0.31, 0.89, 1, 0.97)
 
-            const currentPlayerPosOnVector = { 
-                x: Player.x - Player.lastDashedFrom.x, 
-                y: Player.y - Player.lastDashedFrom.y 
+            const currentPlayerPosOnVector = {
+                x: Player.x - Player.lastDashedFrom.x,
+                y: Player.y - Player.lastDashedFrom.y
             }
             const newPlayerPosOnVector = {
                 x: _newInterpolProgress * Player.DASH_DISTANCE * Player.lastDashVector.x,
